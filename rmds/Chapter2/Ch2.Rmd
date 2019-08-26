@@ -1,0 +1,1209 @@
+---
+title: "Ch 2. Displaying Data"
+output: ioslides_presentation
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(forcats)
+library(dplyr)
+library(ggplot2)
+library(ggforce)
+library(tidyr)
+library(stringr)
+library(knitr)
+library(ggthemes)
+library(wesanderson)
+library(emo)
+library(forcats)
+library(ggmosaic)
+library(ggridges)
+library(kableExtra)
+library(gridExtra)
+library(ggrepel)
+library(RColorBrewer)
+library(plotly)
+library(readr)
+library(colorblindr)
+gg_color_hue <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+  hcl(h = hues, l = 65, c = 100)[1:n]
+}
+```
+
+
+```{r}
+nba <- read.csv("data/nba.csv")                     %>% 
+  mutate(pos = factor(pos, levels = c("G","G/F","F","F/C","C")))
+
+yb_theme <-   theme(axis.text.x=element_text(size=16),
+        axis.text.y=element_text(size=16),
+        axis.title.x = element_text(size=18),
+        axis.title.y = element_text(size=18),
+        legend.title = element_text(size=18),
+        legend.text = element_text(size=16),
+        plot.title = element_text(size=22),
+        strip.text =  element_text(size=18)) 
+
+
+
+i.a <- iris %>% 
+  ggplot(aes(x = Sepal.Length, y = Petal.Length, color = Species, shape = Species)) + 
+  geom_jitter(width = .03,height = .03,size = 2, alpha = .4) +
+  geom_smooth(method = "lm", show.legend = FALSE, se = FALSE, lty = 2, size = .5) +
+  ggtitle("Relationship between lengths of flower parts", 
+          subtitle = expression(paste("Sepal lengths by petal lengths in ", italic("Iris spp."))))+
+  scale_color_manual(values = rev(brewer.pal(3, "Dark2")))+
+  scale_shape_manual(values = c(15,17,16))+
+  theme_tufte()+
+  theme(legend.title = element_text(size=18),
+        legend.text = element_text(size=16,face = "italic"))
+
+i.b <- iris %>% 
+  mutate(Species = factor(Species, levels = rev(levels(iris$Species)))) %>%
+  ggplot(aes(x = Sepal.Length, y = Petal.Length, color = Species, shape = Species)) + 
+  geom_jitter(width = .03,height = .03,size = 2, alpha = .4) +
+  geom_smooth(method = "lm", show.legend = FALSE, se = FALSE, lty = 2, size = .5) +
+  ggtitle("Relationship between lengths of flower parts", 
+          subtitle = expression(paste("Sepal lengths by petal lengths in ", italic("Iris spp."))))+
+  scale_color_manual(values = brewer.pal(3, "Dark2"))+
+  theme_tufte()+
+  theme(legend.title = element_text(size=18),
+      legend.text = element_text(size=16,face = "italic"))
+
+i.c <- iris %>% 
+  mutate(Species = factor(Species, levels = rev(levels(iris$Species)))) %>%
+  ggplot(aes(x = Sepal.Length, y = Petal.Length, color = Species, shape = Species)) + 
+  geom_jitter(width = .03,height = .03,size = 2, alpha = .4, show.legend = FALSE) +
+  geom_smooth(method = "lm", show.legend = FALSE, se = FALSE, lty = 2, size = .5) +
+  ggtitle("Relationship between lengths of flower parts", 
+          subtitle = expression(paste("Sepal lengths by petal lengths in ", italic("Iris spp."))))+
+  scale_color_manual(values = brewer.pal(3, "Dark2"))+
+  annotate(geom = "text", x = c(6.2,6.6,6.4), y = c(6.5,3.6,1.5), 
+           label =   c("italic(I.)~italic(virginica)", 
+                       "italic(I.)~italic(versicolor)", 
+                       "italic(I.)~italic(setosa)"),
+           parse = TRUE, size= 4,
+           color = brewer.pal(3, "Dark2"))+
+  theme_tufte()+
+  theme(legend.title = element_text(size=18),
+      legend.text = element_text(size=16))
+
+
+
+i.d <- iris %>% 
+  ggplot(aes(x = Sepal.Length, y = Petal.Length, shape = Species)) + 
+  geom_jitter(width = .03,height = .03,size = 2, alpha = .4) +
+  geom_smooth(method = "lm", show.legend = FALSE, se = FALSE, lty = 2, size = .5) +
+  theme_tufte()+
+  theme(legend.title = element_text(size=12),
+        legend.text = element_text(size=10)) + 
+  scale_shape_manual(values = c(15,17,16))+
+  ggtitle("Relationship between lengths of flower parts", 
+        subtitle = expression(paste("Sepal lengths by petal lengths in ", italic("Iris spp."))))+
+  theme(legend.text = element_text(size=10,face = "italic"),
+        legend.position = "top", 
+        legend.direction = "horizontal", 
+        legend.title = element_blank(),
+        axis.title = element_blank(),
+        plot.title = element_text(size = 16), 
+        plot.subtitle = element_text(size = 12),
+        )
+i.e <- iris %>% 
+  ggplot(aes(x = Sepal.Length, y = Petal.Length, color = Species)) + 
+  geom_jitter(width = .03,height = .03,size = 2, alpha = .4) +
+  geom_smooth(method = "lm", show.legend = FALSE, se = FALSE, lty = 2, size = .5) +
+  scale_color_manual(values = rev(brewer.pal(3, "Dark2")))+
+  theme_tufte()+
+  ggtitle("", subtitle = "")+
+  theme(legend.text = element_text(size=10,face = "italic"),
+        legend.position = "top", 
+        legend.direction = "horizontal", 
+        legend.title = element_blank(),
+        axis.title = element_blank(),
+        plot.title = element_text(size = 12), 
+        plot.subtitle = element_text(size = 10)
+        )
+
+i.f <- iris %>% 
+  ggplot(aes(x = Sepal.Length, y = Petal.Length, shape = Species, color = Species)) + 
+  geom_jitter(width = .03,height = .03,size = 2, alpha = .4) +
+  geom_smooth(method = "lm", show.legend = FALSE, se = FALSE, lty = 2, size = .5) +
+  scale_color_manual(values = rev(brewer.pal(3, "Dark2")))+
+  theme_tufte()+
+  scale_shape_manual(values = c(15,17,16))+
+  ggtitle("", subtitle = "")+
+  theme(legend.text = element_text(size=10,face = "italic"),
+        legend.position = "top", 
+        legend.direction = "horizontal", 
+        legend.title = element_blank(),
+        axis.title = element_blank(),
+        plot.title = element_text(size = 12), 
+        plot.subtitle = element_text(size = 10)
+        )
+```
+
+
+
+## Key Learning  Goals  
+
+
+Distinguish between explanatory and exploratory figures
+
+Identify what makes a good graph.
+
+Understand how data types drive figure design.   
+
+How to make effective tables.   
+
+Identify best practices in figure design.    
+
+
+
+
+
+## Displaying Data 
+
+Is so very very important
+
+- Can help you understand your data    
+
+- Can help you make clear points to others   
+
+- Always a good starting place   
+
+
+
+
+## Exploratory vs Explanatory Plots: Goals  
+
+<font size = 8> In <font color = "magenta">exploratory data analysis,</font> you aim to find the story of the data.  </font>  
+<br>
+
+<font size = 8> In <font color = "magenta">explanatory data analysis,</font> you aim to share the story of the data. </font>
+<br><br><br>  
+<font size = 4>Note: there is a continuum between explanatory and exploratory plots.  For example: the plot you show your lab is probably somewhere in between what you make for yourself and what you send to the New York Times.   </font>
+
+
+## Exploratory vs Explanatory Plots: Focus  
+
+
+<font size = 6> For <font color = "magenta">exploratory plots:</font> Don't fuss about colors, label size, names etc. If you see the story you're good!</font>  
+
+
+<font size = 6> For <font color = "magenta"> explanatory plots:</font> Fuss about all the things above. Facilitate understanding of audience (eg people unfamiliar with your data, or don't print in color, or are colorblind, etc).</font>  
+ 
+<br><br><br><br>      
+<font size = 4> The suggestions below will help the story of the data reveal itself, and <font color = "magenta">is therefore useful for exploratory & explanatory</font>  plots.  </font>  
+
+
+
+# Data Visualizartion Example: Anscombe's quartet  
+
+## Anscombe's quartet: Data Summary  
+
+Four data sets with identical summary statistics.  
+
+```{r,echo=FALSE}
+
+tidy.anscombe <- cbind(gather(data = anscombe[,1:4], key = group, value = x) %>%
+  mutate(group = LETTERS[as.numeric(
+    str_replace_all(string = group, pattern = c("x"), replacement = "" ))]),
+  gather(data = anscombe[,5:8], key = group2, value = y) %>%  
+    mutate(group2 = LETTERS[as.numeric(str_replace_all(
+      string = group2, pattern = c("y"), replacement = "" ))])) %>%
+  select(-group2)
+
+tidy.anscombe %>%  
+  group_by(group) %>%
+  summarise(mean.x = mean(x), mean.y = mean(y), sd.x = sd(x), sd.y = sd(y), cor.xy = cor(x,y)) %>% 
+  kable(digits = 2) %>%
+  kable_styling()   %>%
+  scroll_box(width = "700px")
+```
+
+
+
+## Anscombe's quartet: Trendlines 
+
+Trendlines do not reveal  differences in the data sets. 
+
+```{r,echo=FALSE, fig.height=5.0, fig.width=6.0}
+anscombe.plot <- ggplot(data = tidy.anscombe%>%rename(`data set` = group), aes(x = x, y = y, color = `data set`)) +
+  stat_smooth(geom="line", method = "lm",se = FALSE, lwd = 1.5,
+              show.legend = FALSE, fullrange=TRUE, alpha = .8) +
+  facet_wrap(~ `data set`, ncol = 2, labeller = "label_both") +
+  ggtitle(label =  "Four data sets. Identical summaries")+ 
+  ylim(c(0,20))  +
+  xlim(c(0,20))  +
+  theme_light()  +
+  yb_theme 
+
+anscombe.plot
+```
+
+
+
+
+
+## Anscombe's Quartet: Data
+
+
+Showing the data reveals serious differences in the data sets. 
+
+```{r,echo=FALSE, fig.height=5.0, fig.width=6.0}
+anscombe.plot +
+  geom_point(show.legend = FALSE, size = 3, alpha = .6) 
+```
+
+
+
+# Rules of Data Visualization
+
+## How to Make A Good Plot  
+
+
+<font size="7">1. Show the data</font>
+
+
+<font size="7">2. Make patterns easy to see</font>
+
+
+<font size="7">3. Represent magnitudes honestly</font>   
+(this goes for all aspects of the data) 
+
+
+<font size="7">4. Draw graphical elements clearly</font>
+
+
+# Mistakes
+
+
+## Mistake  1: Hiding the data  
+
+<font size = 6, color = "black"> How to hide  data:</font>       <font size = 5>    
+
+- Provide only stat summaries.       
+- Overplot.    
+
+<font size = 6, color = "black">How to reveal data:</font>            
+
+- Present all of the data points.     
+- While allowing all to be seen.   
+</font>
+
+## `r ji(keyword = "-1")` Not showing data `r ji(keyword = "-1")` just a summary
+
+
+```{r, echo=FALSE}
+nba %>% 
+  group_by(pos) %>%
+  summarise(mean.height = mean(heights)) %>% 
+  ggplot(aes(x = pos, y = mean.height, fill = pos)) + 
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  labs(title = "Mean heights of NBA players by position") +
+  geom_hline(yintercept = seq(0,90,20), color = "white")+
+  scale_fill_manual(values = wes_palette("Darjeeling1"))+ 
+  ylab("heights (in inches)")+
+  xlab(label = "Position") +
+  theme_tufte() +
+  yb_theme 
+```
+
+
+```{r, echo=FALSE}
+library(wesanderson)
+baseplot <- ggplot(nba, aes(x=pos, y=heights, color=pos, fill=pos)) + 
+  labs(title = "Heights of NBA players by position")    +
+  scale_color_manual(values = wes_palette("Darjeeling1"))           +
+  scale_fill_manual(values = wes_palette("Darjeeling1"))            +
+  ylab("heights (in inches)")                                       +
+  xlab(label = "Position")                                          +
+  ylim(c(65,90))+
+  theme_tufte()+ 
+  yb_theme 
+```
+
+## `r ji(keyword = "-1")` Not showing data `r ji(keyword = "-1")` overploting 
+
+```{r, echo = FALSE}
+baseplot +  geom_point(show.legend = FALSE) 
+```
+
+
+
+
+
+
+
+
+## `r ji(keyword = "+1")` Show the data `r ji(keyword = "+1")` Sinaplots 
+
+
+```{r, echo=FALSE}
+baseplot + geom_sina(show.legend=FALSE, alpha=.2, size= 2)
+```
+
+
+
+
+## `r ji(keyword = "+1")` Show the data `r ji(keyword = "+1")` Jittering
+
+
+
+```{r, echo=FALSE}
+baseplot + geom_jitter(show.legend = FALSE, alpha=.2, size= 2, width = .3)
+```
+
+
+## Mistake  2: Making patterns hard to see
+
+
+
+<font size = 6, color = "black"> How to hide  patterns:</font>       <font size = 5>    
+
+- Make one plot and call it good.          
+- Unreasonable scales.            
+- Arrange factors nonsensically.     
+</font>
+
+
+<font size = 6, color = "black">How to reveal patterns:</font>    <font size = 5>               
+
+- Explore multiple potential plots.     
+- Appropriate  scales.     
+- Arrange factors  meaningfully   <font size = 4> (in order for ordinal, by mean for nominal). </font>      
+
+</font>
+
+
+## `r ji(keyword = "-1")`  Nonsensical order hides patterns `r ji(keyword = "-1")`   
+
+Here, the non-intuitive ordering of factors hides the pattern. 
+
+```{r}
+nba2 <- read.csv("data/nba.csv") %>%
+ mutate(pos = factor(pos, levels = c("C","G","F","F/C","G/F")))
+baseplot + geom_sina(data=nba2, show.legend = FALSE)
+```
+
+
+
+## `r ji(keyword = "-1")`  Bad axis limits hide patterns `r ji(keyword = "-1")` 
+Here the large scale hides the pattern
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+baseplot +  ylim(c(0,500)) + geom_jitter(show.legend = FALSE, alpha=.2, size= 2, width = .3)
+```
+
+
+## `r ji(keyword = "+1")`  Transform data to reveal patterns  `r ji(keyword = "+1")` 
+
+
+
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+mammal.plot <- read_csv("data/SleepInMammals.csv") %>% 
+  ggplot(aes(x = Body_Weight_kg, y = life_span_years, label = Species)) +
+  geom_point(size = 4, alpha = .6)                                      +
+  #geom_smooth(method = "lm")                                            + 
+  xlab("Adult body weight (in kg)")                                     +
+  ylab("Maximum life span\n(in years)")                                  + 
+  ggtitle(label = "Lifespan as a function of body weight in mammals")   +
+  theme_tufte()                                                         +
+  yb_theme
+```
+
+
+
+
+```{r, fig.height=3.8, fig.width=8}
+grid.arrange(mammal.plot ,   
+             mammal.plot + scale_x_continuous(trans = "log10") + scale_y_continuous(trans = "log10") +  ggtitle(label = ""),
+             nrow = 1)
+```
+
+
+<br>  
+
+<font size=4> Relationship between body size and lifespan in mammals, [data](http://lib.stat.cmu.edu/datasets/sleep) from [Allison & Cicchetti 1976](http://science.sciencemag.org/content/194/4266/732) </font>
+
+
+## Mistake 3:  Dishonest magnitudes    
+
+<font size = 6, color = "black"> How to represent magnitudes dishonestly:</font>       <font size = 5>    
+
+- Start bar plots at a non-zero value  
+</font>
+
+<font size = 6, color = "black"> How to represent magnitudes honestly:</font>       <font size = 5>    
+
+- Start bar plots at zero 
+</font>
+
+
+<br><br><br><br><br><br>       
+
+<font size = 4, color = "red">Why? The weight of a barplot makes us think in magnitudes. </font> 
+
+
+##  `r ji(keyword = "-1")`  Present magnitude dishonestly  [1/2]
+
+The plot suggests that centers are 20X taller than guards.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+nba %>% 
+  group_by(pos) %>%
+  summarise(mean.height = mean(heights)) %>% 
+  ggplot(aes(x = pos, y = mean.height -74.5, fill = pos)) + 
+  geom_bar(stat = "identity", show.legend = FALSE) + 
+  geom_hline(yintercept = seq(1,10, 3), color= "white")+
+  scale_y_continuous(breaks = .5+ seq(.5,9.5, 3), 
+                     labels = 74.5 + seq(.5,9.5, 3), 
+                     limits = c(0,10)) +
+  scale_fill_manual(values = wes_palette("Darjeeling1"))+ 
+  xlab(label = "Position") +
+  labs(title = "Mean heights of NBA players by position")+
+  ylab("heights (in inches)")+
+  theme_tufte() +
+  yb_theme 
+```
+
+##  `r ji(keyword = "-1")`   Present magnitude dishonestly  [2/2] 
+
+```{r, fig.width=7, fig.height=5.5}
+ggplot(data = data.frame(z = c("no","yes")), aes(x = 1,fill = z)) +
+  geom_bar(show.legend = FALSE) + 
+  scale_fill_manual(values = c("red","blue")) + 
+  annotate(geom = "text",x = c(1,1),
+           y = c(1.5,.5), 
+           label = c("No","Yes") ,
+           color = "Yellow", size = 10)+ 
+  scale_y_continuous(breaks = seq(0,2,.5),
+                     name = "Percent of the time", 
+                     labels =  98 + seq(0,2, .5)) +
+  ggtitle("How often truncating the y-axis\nof a barplot is misleading.")+
+  xlab("")+
+  theme_tufte() +
+  yb_theme + 
+  theme(axis.text.x  = element_blank(),
+        axis.ticks.x = element_blank())
+```
+
+
+
+
+## Mistake 4:    Draw elements unclearly 
+
+
+<font size = 6, color = "black"> How to draw graphical elements unclearly:</font>       <font size = 5>    
+
+- Unthinkingly accept default options from plotting programs.   
+
+- Do not consider how a diverse audience will consume your figure. 
+
+</font>
+
+<font size = 6, color = "black"> How to draw graphical elements clearly:</font>       <font size = 5>    
+
+- Reflect on plot design.
+
+- Consider the diverse audience you are reaching and how they may interact with your plot. 
+</font>
+
+
+
+## `r ji(keyword = "-1")` Draw graphics UNclearly `r ji(keyword = "-1")`
+
+
+
+```{r, echo=FALSE}
+type.of.death <- data.frame(Number = c(6688,2093,1615,745,463,222,107,73,67,52,1653),
+                            Cause_of_death =c("Accidents", "Homicide", "Suicide", "Malig. tumor", "Heart disease","Congen. abnor.","Chronic res. disease", "Flu/pneumonia", "Cerebrov. disease", "Other tumor","All other cause")) %>% 
+  mutate( Cause_of_death = fct_reorder(Cause_of_death,Number) ) %>%
+  mutate( Cause_of_death = fct_relevel(Cause_of_death, "All other cause" ,after = 0))
+
+death <- ggplot(data = type.of.death, aes(x = Cause_of_death, y = Number)) + 
+  ggtitle("Leading cause of death", subtitle =  "ages 15-19 (USA 1999)")+xlab("Cause of Death")+
+  theme_tufte() +
+  yb_theme
+```
+
+
+
+```{r, fig.height=4}
+death + geom_bar(stat = "identity", fill = "#FA847E") 
+```
+
+
+
+
+## `r ji(keyword = "+1")` Clear graphics `r ji(keyword = "+1")` Flip coordinates
+
+
+
+```{r, fig.height=4}
+death + geom_bar(stat = "identity") + coord_flip()
+```
+
+## `r ji(keyword = "+1")` Clear graphics `r ji(keyword = "+1")`  for everyone 
+
+Consider colorblind readers
+
+
+```{r, fig.width=8, fig.height=4}
+iris.col <- ggplot(iris, aes(x = Sepal.Length, y = Petal.Length, color=Species)) + theme(plot.subtitle = element_text(vjust = 1),legend.text = element_text(face = "italic"), 
+    plot.caption = element_text(vjust = 1), 
+    legend.position = c(0.8, 0.183)) + geom_point()
+
+a <- iris.col + ggtitle(label = "Type of colorblindness",subtitle = "Not color blind")  
+b <- edit_colors(iris.col + ggtitle(label = "",subtitle = "Red-Green")+ ylab(""), deutan, sev=1)
+c <- edit_colors(iris.col + ggtitle(label = "",subtitle = "Blue-Yellow")+ ylab(""), tritan, sev=1)
+
+grid.arrange(a,b,c, nrow=1)
+```
+
+## `r ji(keyword = "+1")` Clear graphics `r ji(keyword = "+1")` Direct labelling.
+
+Which of these is easier to interpret?
+
+```{r, fig.height=3.5, fig.width=8.5}
+grid.arrange(i.b,i.c, nrow = 1)
+```
+
+
+
+
+## `r ji(keyword = "+1")` Clear graphics `r ji(keyword = "+1")`  Redundant coding.
+
+Which of these is easier to interpret?
+
+```{r, fig.height=3.5, fig.width=8.5}
+grid.arrange(i.d,i.e,i.f, nrow = 1)
+```
+
+
+
+
+
+# Consider data type! 
+
+Plots often follow from data structure 
+
+
+# Categorical variables
+
+
+<font color = "LAVENDERBLUSH">Barplots &  </font>  
+<font color = "LAVENDERBLUSH">Tables  </font>  
+
+
+## Nonesensical ordering hides patterns
+
+
+<font color = "magenta" size = 10>Order ordinal factors meaningfully</font>   
+
+- For example from January to December.  
+<br><br>
+
+<font color = "magenta" size = 10>Order nominal factors by count</font>.   
+
+- If there is a grab bag category, place it after the lowest count.
+
+
+
+
+## Ordering factors nonsensically
+
+
+`r ji("-1")` Before re-ordering factors `r ji("-1")`   `r ji("+1")` After re-ordering factors `r ji("+1")` 
+
+```{r, fig.height=4}
+type.of.death2 <- data.frame(Number = c(6688,2093,1615,745,463,222,107,73,67,52,1653),
+                            Cause_of_death =c("Accidents", "Homicide", "Suicide", "Malig. tumor", "Heart disease","Congen. abnor.","Chronic res. disease", "Flu/pneumonia", "Cerebrov. disease", "Other tumor","All other cause")) 
+death2 <- death + geom_bar(data = type.of.death2, stat = "identity") + coord_flip()
+
+
+type.of.death2 <- type.of.death2 %>% 
+  mutate( Cause_of_death = fct_reorder(Cause_of_death,Number) ) %>%
+  mutate( Cause_of_death = fct_relevel(.f = Cause_of_death, 
+                                       "All other cause",
+                                       after = 0))
+```
+
+
+```{r, fig.height=4}
+death2
+```
+
+
+
+## Ordering factors meaningfully
+
+
+`r ji("+1")` After re-ordering factors `r ji("+1")` 
+
+
+```{r, fig.height=4}
+death + geom_bar(stat = "identity") + coord_flip()
+```
+
+## Tables should follow similar rules
+
+
+`r ji("-1")` Ordered nonsensically `r ji("-1")` 
+
+```{r}
+kable(type.of.death2[order(as.character(type.of.death2$Cause_of_death)),])   %>%
+  kable_styling(font_size = 16)      %>%
+  row_spec(0,  background = "grey",color = "white") %>%
+  row_spec(seq(2, nrow(type.of.death ), 2),  background = "WHITESMOKE") %>%
+  scroll_box(width = "500px", height = "400px")
+```
+
+
+## Tables should follow similar rules
+
+
+`r ji("+1")` Ordered to show patterns `r ji("+1")` 
+
+```{r}
+kable(type.of.death)   %>%
+  kable_styling(font_size =  16)      %>%
+  row_spec(0,  background = "grey",color = "white") %>%
+  row_spec(seq(2, nrow(type.of.death ), 2),  background = "WHITESMOKE") %>%
+  scroll_box(width = "500px", height = "400px")
+```
+
+
+
+
+# One numerical variable.  <br> Example: Words in Gettysburg address
+
+<font color = "LAVENDERBLUSH">Histograms   </font>  
+<font color = "LAVENDERBLUSH">Density Plots &  </font>  
+<font color = "LAVENDERBLUSH">Cumulative Frequency Distributions</font>
+
+## One numerical variable - Goals.
+
+
+<font size = 10>Visualize the <font color = "MEDIUMVIOLETRED"> center</font> (*mean*)  </font>
+
+<font size = 10>Visualize the <font color = "MEDIUMVIOLETRED">width </font> (*variation*) </font>
+
+<font size = 10>Visualize the <font color = "MEDIUMVIOLETRED"> shape </font>  (*distribution*) </font>
+
+
+## Raw data
+
+
+```{r}
+getty        <- read.csv("https://goo.gl/iS5m1h") 
+kable(getty)%>%
+  kable_styling()  %>%
+  row_spec(0,  background = "grey",color = "white") %>%
+  row_spec(seq(2, nrow(getty ), 2),  background = "WHITESMOKE") %>%
+  scroll_box(width = "500px", height = "450px")
+```
+
+
+
+## Summary tables  
+
+`#` of words of length `word.lengths` in the Gettysburg address
+
+```{r}
+word.lengths.table <- data.frame(table(getty$word.lengths))
+colnames(word.lengths.table) <- c("word.lengths", "count")
+word.lengths.table$word.lengths <- as.numeric(as.character(word.lengths.table$word.lengths))  
+  kable(word.lengths.table, caption = "word.lengths.table")%>%
+  kable_styling()  %>%
+  row_spec(0,  background = "grey",color = "white") %>%
+  row_spec(seq(2, nrow(word.lengths.table), 2),  background = "WHITESMOKE") %>%
+  row_spec(1:nrow(word.lengths.table)) %>%
+  scroll_box(width = "500px")
+```
+
+
+
+```{r }
+getty.base <- ggplot(data = getty, aes(x = word.lengths)) +
+  ggtitle("Word length dist. in Gettysburg address")+
+  theme_tufte() +
+  yb_theme
+```
+
+
+
+## Histograms
+
+<font color = "black">Histograms</font> provide a visual description of these patterns
+
+```{r,fig.height=4,fig.width=6}
+getty.base + 
+  geom_histogram(binwidth = 1, color = "white") + 
+  geom_hline(yintercept = seq(0,60,20), color = "white")
+```
+
+
+
+
+## Histograms. Consider yout bins
+
+
+<font size = 10, color = "Goldenrod"> Changing bins can change stories</font>   
+
+- Don't be fooled. Don't allow binwidth to obscure your data
+
+<font size = 10, color = "Maroon"> Never use defaults (w.o thinking)</font>  
+
+
+
+## Density plots
+
+<font color = "black">Density plots</font>  serve a similar purpose as histograms, but smooth the distribution. 
+
+```{r,fig.height=4,fig.width=6}
+getty.base + geom_density(fill = "grey", adjust = 1.1) 
+```
+
+
+<font size = 4, color = "maroon">Like histograms (even more so), we can be fooled by bandwidth. take control of this</font>
+
+
+## Cumulative Frequency Distributions 
+
+<font color = "black">Cumulative Frequency Distributions  </font>  Provide a visualization that clearly communicates quantiles.  
+
+```{r, fig.align='center',echo=FALSE}
+getty.base  +  stat_ecdf(geom = "step") + 
+  theme_economist_white()               +  
+  ylab("cumulative frequency") +  
+  #geom_hline(yintercept = seq(0,1,.25), color="lightgrey",lty=2)+
+  yb_theme
+```
+
+
+
+## Shapes of distributions 
+
+<font size = 10>Histograms, density plots, & cumulative frequency plots can </font>  
+<font size = 10> <font color = "MEDIUMVIOLETRED">   Reveal The Shapes</font> of distributions</font>
+
+This is important for understanding data and choosing  stats
+
+## Distribution shapes: Histrograms. 
+
+
+
+```{r, warning=FALSE, fig.align='center',message=FALSE}                                              
+hist_1 <- runif(5000) 
+hist_2 <- c(rnorm(2500,.25,sd=.05),rnorm(2500,.70,sd=.15))
+hist_3 <- rnorm(5000,.5,sd=.2)
+hist_4 <- c(rnorm(5000,.35,sd=.1)+(rexp(5000,10)))
+hist.dat <- data.frame( x = c(hist_1, hist_2, hist_3, hist_4), 
+            type = rep( c("uniform", "bimodal", "bell shaped", "skewed"), 
+                        times = c(length(hist_1), 
+                                  length(hist_2), 
+                                  length(hist_3), 
+                                  length(hist_4))))
+
+shape.baseplot <- ggplot(data = hist.dat, aes(x = x)) +  xlim(c(0,1)) +
+  facet_wrap(~type, nrow = 2) +
+  theme_light()+
+  yb_theme 
+
+shape.baseplot +  geom_histogram(binwidth = .02, col = "lightgrey") +
+  scale_x_continuous(breaks = c(0,.25,.5,.75,1),labels = c("0","1/4","1/2","3/4","1"),limits = c(0,1))
+```
+
+
+
+## Distribution shapes: Density Plots. 
+
+
+```{r, warning=FALSE, fig.align='center',message=FALSE}                                              
+ggplot(data = hist.dat, aes(x = x)) +  xlim(c(0,1)) +
+  geom_density(fill = "lightgrey") +
+  facet_wrap(~type, nrow = 2) +
+  theme_light()+
+  yb_theme+
+  scale_x_continuous(breaks = c(0,.25,.5,.75,1),labels = c("0","1/4","1/2","3/4","1"),limits = c(0,1))
+```
+
+
+
+## Distribution shapes:  Cumulative Frequency Distributions 
+
+
+```{r, fig.align='center', warning=FALSE}
+shape.baseplot +  stat_ecdf(geom = "step")   +
+  scale_x_continuous(breaks = c(0,.25,.5,.75,1),labels = c("0","1/4","1/2","3/4","1"),limits = c(0,1))
+```
+
+
+
+# Two categorical variables. Example: Is breeding dangerous for birds? 
+
+<font color = "LAVENDERBLUSH">Bar Plots   (Grouped,  Stacked, or Filled) &  </font>  
+<font color = "LAVENDERBLUSH">Contingency Tables  &  </font>  
+<font color = "LAVENDERBLUSH">Mosaic Plots</font>
+
+
+## Two categorical variables - Goals 
+
+
+<font size = 10>Visualize the <font color = "MEDIUMVIOLETRED"> association</font> between variables </font>
+
+
+
+## Is breeding dangerous for birds?
+
+
+<div style= "float:right; position: relative; bottom: 5px;margin-left: 10px;margin-bottom: .5em;">
+![](https://www.researchgate.net/profile/Peter_Adamik/publication/225733187/figure/fig1/AS:302798743851019@1449204254459/A-great-tit-with-characteristic-skin-avipoxvirus-lesion-Photo-graphed-by-Karel-Novotny_Q320.jpg)
+
+<font size = 4> A bird with malaria.  Iimage from   
+[Literak et al. 2010](https://link.springer.com/article/10.1007/s10344-009-0345-5)
+</font>  
+
+</div>
+
+To find out, [Oppliger et al (1996)](https://www.nature.com/articles/381565a0), removed eggs from  some, and not other, *Parus major* to encourage them to breed more.   
+
+They later assayed moms for malaria. Here are the data as a <font color = "black"> contingency table    </font> 
+
+
+```{r, echo=FALSE}
+bird.malaria <- data.frame(
+  outcome = c("malaria","no_malaria","total"),
+  control = c(7,28,35),
+  removed = c(15,15,30),
+  total = c(22,43,65),
+  row.names = NULL
+)
+```
+
+
+
+```{r,echo=FALSE}
+kable(bird.malaria) %>% 
+  kable_styling(full_width = FALSE,font_size = 24)  %>%
+  row_spec(0,  background = "grey",color = "white") %>%
+  row_spec(3, color = "lightgrey") %>%
+  column_spec(4,  color = "lightgrey") 
+```
+
+
+
+## Visualization: A grouped bar graph
+
+
+
+```{r}
+#First we need basic data manipulation 
+
+#- make it tidy etc 
+tidy.birds <- bird.malaria                             %>% 
+  select(-total)                                   %>%
+  filter(outcome != "total")                    %>% 
+  mutate(outcome = droplevels(outcome))                %>%
+  gather(key = treatment, value = n_birds, - outcome) 
+```
+
+
+
+ 
+```{r, fig.align='center', fig.width=8, fig.height=4.5}
+bird.base <- ggplot(data = tidy.birds, 
+                    aes(x = treatment, 
+                        y = n_birds, 
+                        fill = outcome))         +
+  scale_fill_manual(values = c("black","#9DCEFF")) + 
+  labs( title = "Reproduction X Disease", 
+        ylab = "# individuals")                  +
+  theme_tufte()                                  +
+  yb_theme
+```
+
+ 
+```{r, fig.align='center', fig.width=8, fig.height=4.5}
+bird.base +  geom_bar(stat = "identity", position = "dodge") + 
+  geom_hline(yintercept = seq(0,30,10), color = "white")+ 
+   ylab("# individuals")
+```
+
+
+## Visualization: A stacked bar graph
+
+
+```{r, fig.align='center', fig.width=8, fig.height=4.5}
+bird.base +  
+  geom_bar(stat = "identity", position = "stack")                   
+```
+
+
+
+## Bar graphs: Stacked v grouped 
+
+- Which do we like better?     
+
+- The appropriate graph depends on the question
+
+## Visualization: Mosaic plot  
+
+
+```{r, fig.align='center', fig.width=6, fig.height=4}
+bird.base + 
+  geom_mosaic(aes(x = product(treatment), weight = n_birds,
+                            fill = outcome), 
+              show.legend = FALSE) +                       theme(axis.text.y = element_text(angle = 90, hjust = c(.5,0),vjust = -1, color = c("black","darkblue")) )+ ylab("# individuals")
+
+```
+
+
+
+#  Associations between categorical and numerical variables. Example: Iris flowers.
+
+
+<font color = "LAVENDERBLUSH">Multiple Hitograms or Joyplots & </font>  
+<font color = "LAVENDERBLUSH">Stripcharts, Sinaplots or Boxplots</font>
+
+## DATA: Edgar Andersons' Iris dataset  
+
+<img src="https://s3.amazonaws.com/assets.datacamp.com/blog_assets/Machine+Learning+R/iris-machinelearning.png" width="800" height="300" /> 
+
+
+##  Multiple Histograms 
+
+
+```{r, fig.align='center',fig.height=4, echo=FALSE}
+ggplot(iris %>% mutate(Species = paste("I.",Species)), aes(x = Sepal.Length, fill = Species) ) +
+  geom_histogram(binwidth = .2, show.legend = FALSE, alpha = .3) +  
+  facet_wrap(~ Species, ncol = 1)                                + 
+  ggtitle("Sepal lengths of three Iris species") +   
+  theme_test() + 
+  yb_theme+ theme(strip.text = element_text(face = "italic"))
+```
+
+
+
+##  Ridegeline plots
+
+
+```{r, echo=FALSE, fig.height=4.0}
+ggplot(iris, aes(x = Sepal.Length, y = Species, fill = Species)) + 
+  geom_density_ridges(alpha = .5, show.legend = F, bandwidth = .2, scale=1)      + 
+  ggtitle("Sepal length distributions of Iris species ") + 
+  scale_y_discrete(expand = c(0,0))+ 
+  theme_tufte() +                      
+  yb_theme
+```
+
+
+
+
+```{r}
+base.iris <- ggplot(data = iris %>% mutate(Species = paste("I.",Species)), aes(x = Species, y = Sepal.Length, 
+                                     fill = Species, color = Species)) + 
+  ggtitle("Sepal lengths of three Iris species ")               +
+  theme_tufte()                                                        + 
+  xlab("")+
+  yb_theme+
+  theme(axis.text.x = element_text(face = "italic"))
+```
+
+```{r}
+base.iris.p.stat <- base.iris                                          + 
+  stat_summary(fun.data = "mean_cl_normal", 
+               color="black", 
+               show.legend=F)                                          +   
+  ggtitle("Sepal length distributions of Iris species ", 
+          subtitle = "Black points and lines describe means and 95% confidence intervals, respectively")
+```
+
+
+##  A bad visualization.  
+
+Be sure to avoid <font color = "black"> overplotting </font>  
+
+```{r, fig.align='center'}
+ base.iris                                          + 
+   geom_point(size = 2,  show.legend = FALSE)+
+  stat_summary(fun.data = "mean_cl_normal", 
+               color="black", 
+               show.legend=F)                                          +   
+  ggtitle("Sepal length distributions of Iris species ", 
+          subtitle = "Black points and lines describe means and 95% confidence intervals, respectively")
+```
+
+## Better option: Strip chart
+
+```{r, fig.align='center'}
+base.iris.p.stat  + geom_jitter(size = 2, alpha = .4, show.legend = FALSE)
+```
+
+
+## Better option: Sina plot 
+
+```{r, fig.align='center'}
+base.iris.p.stat + geom_sina(size = 2, alpha = .4, show.legend = FALSE) 
+```
+
+
+
+## Better option:  Violin Plot 
+
+```{r, fig.align='center'}
+base.iris + geom_violin(alpha = .2, show.legend = FALSE)+ stat_summary(fun.data = "mean_cl_normal", 
+               color="black", 
+               show.legend=F)     +   
+  ggtitle("Sepal length distributions of Iris species ", 
+          subtitle = "Black points and lines describe means and 95% confidence intervals, respectively")
+```
+
+
+
+## Better option:  Violin + Sinaplot
+
+```{r, fig.align='center'}
+base.iris +  
+  geom_violin(alpha = 0, show.legend = FALSE) + 
+  geom_sina(size = 2, alpha = .4, show.legend = FALSE)
+```
+
+
+
+## Better option:  Boxplot 
+
+
+
+<div style= "float:left; position: relative; bottom: 5px;margin-rightt: 10px;margin-bottom: .5em;">  
+
+```{r, fig.width=5.5}
+base.iris + geom_boxplot(alpha = .01, show.legend = FALSE) + annotate(geom = "point", x = 3, y=4.8)
+```
+
+</div>
+
+<font color = "black">Boxplot refresher</font>   
+<font size = 5>Largest non extreme </font>  
+
+
+<font size = 5><br> Q3: Upper Quartile    
+ Q2: Median    
+  Q1: Lower Quartile </font>     
+
+
+<font size = 5> Smallest non extreme </font>   
+
+
+
+<font size = 5>Dots denote extreme points</font>
+
+## Better option: Boxplot + Jitter
+
+```{r, fig.align='center'}
+base.iris + 
+  geom_boxplot(alpha =.01, show.legend = FALSE) +
+  geom_jitter(size = 2, alpha = .4, show.legend = FALSE)
+```
+
+
+
+
+# Associations between two numerical variables & beyond. Example: Iris data
+
+
+<font color = "LAVENDERBLUSH">Scatterplots</font>
+
+## Two numerical variables - Goals
+
+
+<font size = 10>Visualize the <font color = "MEDIUMVIOLETRED"> association</font> </font>
+
+<font size = 10>Visualize the <font color = "MEDIUMVIOLETRED"> joint distribution</font> </font>
+
+
+## Scatterplots  
+
+
+
+```{r}
+iris %>% 
+  filter(Species == "versicolor") %>% 
+  ggplot(aes(x = Sepal.Length, y = Petal.Length)) + 
+  geom_jitter(width = .03,height = .03,size = 4, alpha = .4, color = "#CF8AB7") +
+  geom_smooth(method = "lm") +
+  ggtitle("Relationship between lengths of flower parts", 
+          subtitle = expression(paste("Petal lengths by sepal lengths in ", italic("Iris versicolor"))))+
+  theme_tufte()+
+  yb_theme
+#CF8AB7
+```
+
+## Two continuous, One categorical [1/3] 
+
+Try "small muliples" 
+
+```{r}
+iris %>% mutate(Species = paste("I.",Species))%>% 
+  ggplot(aes(x = Sepal.Length, y = Petal.Length, color = Species)) + 
+  geom_jitter(width = .03,height = .03,size = 4, alpha = .4, show.legend = FALSE) +
+  geom_smooth(method = "lm", show.legend = FALSE) +
+  ggtitle("Relationship between lengths of flower parts", 
+          subtitle = expression(paste("Sepal lengths by petal lengths in ", italic("Iris spp."))))+
+  facet_wrap(~ Species, nrow = 1)+
+  scale_color_manual(values = rev(gg_color_hue(3)))+
+  theme_light()+
+  yb_theme
+```
+
+
+## Two continuous, One categorical [2/3]
+
+Try scatterplots  with legends. 
+
+```{r}
+iris %>% 
+  mutate(Species = factor(Species, levels = rev(levels(iris$Species)))) %>%
+  ggplot(aes(x = Sepal.Length, y = Petal.Length, color = Species, shape = Species)) + 
+  geom_jitter(width = .03,height = .03,size = 4, alpha = .4) +
+  geom_smooth(method = "lm", show.legend = FALSE, se = FALSE, lty = 2, size = .5) +
+  ggtitle("Relationship between lengths of flower parts", 
+          subtitle = expression(paste("Sepal lengths by petal lengths in ", italic("Iris spp."))))+
+ scale_color_manual(values = rev(gg_color_hue(3)))+
+  theme_tufte()+
+  yb_theme
+```
+
+
+
+## Two continuous, One categorical [3/3]
+
+Try scatterplots with direct labeling.
+
+```{r}
+iris %>% 
+  mutate(Species = factor(Species, levels = rev(levels(iris$Species)))) %>%
+  ggplot(aes(x = Sepal.Length, y = Petal.Length, color = Species, shape = Species)) + 
+  geom_jitter(width = .03,height = .03,size = 4, alpha = .4, show.legend = FALSE) +
+  geom_smooth(method = "lm", show.legend = FALSE, se = FALSE, lty = 2, size = .5) +
+  ggtitle("Relationship between lengths of flower parts", 
+          subtitle = expression(paste("Sepal lengths by petal lengths in ", italic("Iris spp."))))+
+  scale_color_manual(values = rev(gg_color_hue(3)))+
+  annotate(geom = "text", x = c(7.6,6.6,6.2), y = c(5.5,3.6,1.5), label = 
+             c("italic(I.)~italic(virginica)", "italic(I.)~italic(versicolor)", "italic(I.)~italic(setosa)"),
+           parse = TRUE, size= 5,
+           color =  rev(gg_color_hue(3)))+
+  theme_tufte()+
+  yb_theme
+```
+
+
+
+```{r}
+tibble(Year = c(2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016),       Cost = c(12922,13639,14439,15505,16510,17451,18471,19363,20409,21126,22074,23011,23871,24701, 25409,26120)) %>% ggplot(aes(x=Year, y = Cost))+geom_point()+geom_line()+scale_y_continuous(limits = c(0,30000),label=dollar_format())+theme_light()+yb_theme+ylab("2018 Inflation-Adjusted US Dollars")+ggtitle("The rising cost of college")
+```
