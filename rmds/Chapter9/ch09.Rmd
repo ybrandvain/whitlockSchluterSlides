@@ -1,0 +1,799 @@
+---
+title: "Contingency Analysis: Associations Between Categorical Variables"
+author: "yaniv"
+date: "feb 21"
+output: ioslides_presentation
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(forcats)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(ggforce)
+library(tidyr)
+library(stringr)
+library(knitr)
+library(ggthemes)
+library(wesanderson)
+library(emo)
+library(forcats)
+library(ggmosaic)
+library(ggridges)
+library(kableExtra)
+library(gridExtra)
+library(ggrepel)
+library(RColorBrewer)
+library(plotly)
+library(readr)
+library(stringr)
+library(infer)
+library(emoGG)
+
+
+yb_theme <-   theme(axis.text.x=element_text(size=16),
+        axis.text.y=element_text(size=16),
+        axis.title.x = element_text(size=18),
+        axis.title.y = element_text(size=18),
+        legend.title = element_text(size=18),
+        legend.text = element_text(size=16),
+        plot.title = element_text(size=22),
+        strip.text =  element_text(size=18)) 
+```
+
+
+
+## We Often Care About Associations  
+
+<font size = 6>
+
+- Does eating chocolate decrease the chance you'll have a bad day?   `r ji("chocolate_bar")`  
+
+- Does the home team have an advantage?   `r ji("basketball")` 
+
+- Is the use of "bath salts"  associated with cannibalism? `r ji("bathtub")` `r ji("woman_zombie")` [probably not](https://www.smithsonianmag.com/science-nature/no-bath-salts-wont-turn-you-into-cannibal-180953418/)  
+
+- Does fertilizing tomatoes increase the chance they set fruit?   `r ji("tomato")`
+
+</font>
+
+etc... 
+
+## Quantifying & Testing Associations Between Categorical Variables
+
+
+<font size = 10> Quantify  </font>
+
+- Relative risk
+
+- Odds Ratio 
+
+<font size = 10> Test  </font>
+
+- $\chi^2$ contingency test   
+
+- Fisher's exact test (a permutation for small samples)    
+
+- G-test 
+
+
+## Example: Blue Buts Get Birds Bit `r ji("bird")`  
+
+```{r, warning=FALSE, message=FALSE}
+bird.buts <- tibble(Buts = c("white","white","blue","blue"), 
+       Fate = c("dinner","alive","dinner","alive") , 
+       n    = c(9,92,92,11))
+
+ggplot(data = bird.buts) +
+  geom_mosaic(aes(x = product(Fate), weight = n,
+                            fill = Buts), 
+              show.legend = FALSE, color = "black",lwd=1) +                       
+  scale_fill_manual(values = c("steelblue","white")) +
+  xlab("Fate")+
+  ylab("Color of Rump") +
+  scale_y_continuous(expand =  c(0,0)) +
+  ggtitle("   Fate of 203 pigeons")+
+  theme_tufte()+
+  yb_theme     +
+  scale_y_continuous(breaks =NULL) +
+  theme(axis.text.y = element_text(angle = 90, hjust = c(.5,0),vjust = 0), 
+        axis.ticks = element_blank())
+```
+
+
+<font size = 4, color = "lightgrey"> Ref -- Predation: Prey plumage adaptation against falcon attack. Palleroni et al. 2005. Nature 21: 973-974 [link](https://www.ncbi.nlm.nih.gov/pubmed/15846334)</font>
+
+
+## code for plot
+
+
+```{r, eval=FALSE, echo=TRUE}
+# a scaled down version of the code for this plot
+library(ggmosaic)
+bird.buts <- tibble(Buts = c("white","white","blue","blue"), 
+       Fate = c("dinner","alive","dinner","alive") , 
+       n    = c(9,92,92,11))
+
+ggplot(data = bird.buts) +
+  geom_mosaic(aes(x = product(Fate), weight = n,
+                            fill = Buts), 
+              show.legend = FALSE, color = "black",lwd=1) +                       
+  scale_fill_manual(values = c("steelblue","white")) +
+  xlab("Fate")+
+  ylab("Color of Rump") +
+  scale_y_continuous(expand =  c(0,0)) +
+  scale_y_continuous(breaks =NULL) +
+  theme(axis.text.y = element_text(angle = 90, hjust = c(.5,0),vjust = 0), 
+        axis.ticks = element_blank())
+```
+
+
+
+# Quantifying Associations Between Categorical Variables 
+
+<font color = "Coral">Relative Risk</font>  
+<font color = "Coral">Odds Ratio</font>  
+
+
+
+## Relative risk
+ 
+<font color = "black">Relative risk</font> is the probability of an undesired outcome in the treatment group divided by the probability of the same outcome in the control group
+ 
+$$\widehat{RR} = \frac{\widehat{p_1}}{\widehat{p_2}}$$  
+
+
+
+<br><br><br><br><br><br>
+
+Where $\widehat{p_i}= \frac{n_\text{Bad outcomes in group i}}{n_\text{Individuals in group i}}$
+
+
+## Relative Risk: Titanic Example 
+
+Comparing the risk of death for women  to men on the Titanic.   
+
+![](https://upload.wikimedia.org/wikipedia/commons/6/6e/St%C3%B6wer_Titanic.jpg)
+
+## Example: Surviving the Titanic
+
+
+Relative Risk: female as treatment, and male as control. 
+
+$p_\text{female} = \frac{109}{109 + 338} \approx 0.24\text{, }p_\text{male} = \frac{1329}{1329 + 316}  \approx 0.81$. 
+
+Relative risk = $\frac{p_\text{female}}{p_\text{male}} \approx \frac{0.24}{0.81} \approx 0.30$
+
+
+
+```{r fig.height=3.5, fig.width=4, warning=FALSE, message=FALSE}
+titan <- data.frame(rbind(colSums(Titanic)[,,1],colSums(Titanic)[,,2]) )%>% 
+  mutate(fate   = rep(c("Died","Survived"), each = 2),
+         gender = rep(c("Male","Female"), times = 2)) %>%
+  gather(Child, Adult, key = age, value = Inds) %>%
+  filter(age == "Adult") %>%
+  select(-age)
+
+
+titan.plot <-  ggplot(data = titan) +
+  geom_mosaic(aes(x = product(fate,gender), fill=fate, weight = Inds),show.legend = FALSE) +
+  scale_y_continuous(expand = c(0,0)) +
+  theme(axis.title = element_text(size = 14)) +
+  labs(x = "Gender",y="") +
+  scale_fill_manual(values =c("orange","steelblue"), breaks=c("Survived","Died"))+
+  ggtitle(label = "   Surviving the Titanic")+
+  annotate(geom = "text", x = c(.1,.9,.1,.9), y = c(.1,.1,.9,.9), 
+           label = c(109, 1329,338,316),color = "white", size =7) +
+  theme_tufte()    +
+  yb_theme +
+  guides(fill = guide_legend( title="")) +
+  scale_y_continuous(breaks = c(.14,.5), labels = c("Die","Survive"))+
+  theme(axis.ticks = element_blank(),
+        axis.text.y = element_text(angle = 90, hjust = c(.5,0),size = 22,
+                                   vjust = -.5, color = c("orange","steelblue"))) 
+  
+
+titan.plot 
+```
+
+
+
+## Odds and Odds Ratios 
+
+Odds: Probability of success divided by probability of failure 
+
+$$\widehat{O} = \frac{\widehat{p}}{1 - \widehat{p}}$$
+
+
+<font color = "black">Odds range from 0 to $\infty$,</font> <font color = "lightgrey"> unlike  probs that range from 0 to 1.</font> 
+
+If $\widehat{O} > 1$, success is more likely than failure
+
+
+
+## When to Calculate Odds Ratios?
+
+We often cannot obtain an unbiased estimate of $p_1$ or $p_2$. 
+
+Odds ratios risk can be calculated even  when we don't have a random sample and  we can't obtain unbiased probabilities `r ji("bangbang")`.
+
+Thus it is extremely useful for "case-control" studies, as they have a large sample of individuals with rare conditions.   
+
+
+
+$$\widehat{OR} = \frac{\widehat{O_1}}{\widehat{O_2}} = \frac{a/c}{b/d} = \frac{ad}{bc}$$
+
+```{r}
+or <- data.frame(Treatment = c("a","c"), Control = c("b","d"), 
+                 row.names = c("Success (focal outcome)", "Failure (alternative outcome)"))
+kable(or) %>%   kable_styling(full_width = FALSE) 
+#or
+```
+
+```{r}
+#Example car accidents and Toxoplasma [crazy cat people]
+drivers <- data.frame(infected = c(61,16), 
+                     uninfected = c(124,169), 
+                     row.names = c("In accident","Not in accident"))
+```
+
+## Odds Ratio: Toxoplasma & Car Wrecks 
+
+
+<font size = 6>
+<font color = "black">Toxoplasma</font> tricks `r ji("mouse")`mice`r ji("mouse")` into taking risks so it can find it's way into `r ji("cat")`cats`r ji("cat")`. Could  <font color = "black">Toxoplasma</font> be associated with risk taking in humans? [Yereli et al.](https://www.ncbi.nlm.nih.gov/pubmed/16332418) asked this by comparing <font color = "black">Toxoplasma</font>  prevalence in people who caused car crashes to those who hadn't.</font> 
+
+<div style= "float:left;position: relative; top: 0px;">
+<img src = "https://upload.wikimedia.org/wikipedia/commons/7/72/Toxoplasmosis_life_cycle_en.svg" width = 60%>
+</div> 
+
+
+
+## $\widehat{OR}$: Toxoplasma & Car Wrecks. Try! 
+
+```{r}
+kable(or) %>% kable_styling(full_width = FALSE) 
+#or
+```
+
+
+$$\widehat{OR} = \frac{\widehat{O_\text{infected}}}{\widehat{O_\text{uninfected}}} = \frac{a/c}{b/d} = \frac{ad}{bc}  = ??? $$
+
+```{r}
+kable(drivers) %>% kable_styling(full_width = FALSE)
+#drivers
+```
+
+
+## $\widehat{OR}$: Toxoplasma & Car Wrecks.
+
+```{r}
+kable(or) %>% kable_styling(full_width = FALSE) 
+#or
+```
+
+$$\widehat{OR} = \frac{\widehat{O_\text{infected}}}{\widehat{O_\text{uninfected}}}  = \frac{a/c}{b/d} = \frac{ad}{bc} =\frac{61 \times 169}{124 \times 16} = `r round((61 * 169)/(124 * 16),digits =2)`$$
+
+```{r}
+kable(drivers) %>% kable_styling(full_width = FALSE)
+#drivers
+```
+
+
+## Toxoplasma & Car Wrecks. Summary
+
+w.o knowing the p(wreck | toxoplasma) 
+
+We learned that the odds of being in a car wreck is <font color = "black">five times higher</font> if you have toxoplasma than if you do not!
+
+
+
+```{r fig.height=4, fig.width=4.5, warning=FALSE, message=FALSE}
+drivers <- data.frame(infected = c(61,16), 
+                     uninfected = c(124,169), 
+                     row.names = c("In accident",
+                                   "Not in accident"))
+ggplot(data = drivers %>% 
+         mutate(wreck = rownames(drivers)) %>% 
+         gather(key = toxoplasma, value = n, -wreck)) +
+  geom_mosaic(aes(x = product(toxoplasma), weight = n,fill = wreck), show.legend = FALSE) +                       
+  scale_fill_manual(values = c("gold","firebrick")) +
+  xlab("Toxoplasma infection status")+
+  ylab("") +
+  scale_y_continuous(expand =  c(0,0)) +
+  ggtitle(label = "  More wrecks in toxoplasma cases")+
+  theme_tufte()+
+  yb_theme     +
+  theme(axis.ticks = element_blank(), plot.title = element_text(size=20))+
+  guides(fill = guide_legend(reverse = TRUE, title="")) +
+  scale_y_continuous(breaks = c(.35,.95), labels = c("In accident","Not in accident"), position = "right")+
+  theme(axis.ticks = element_blank(),
+        axis.text.y = element_text(angle = -90,size = 16,color = c("gold","firebrick"))) 
+
+```
+
+
+
+## Toxoplasma & Car Wrecks. Plot Code 
+
+
+
+
+
+```{r eval=FALSE, echo=TRUE}
+# a scaled down version of the code for this plot
+ggplot(data = drivers %>% 
+         mutate(wreck = rownames(drivers)) %>% 
+         gather(key = toxoplasma, value = n, -wreck)) +
+  geom_mosaic(aes(x = product(toxoplasma), weight = n,fill = wreck), 
+              show.legend = FALSE) +                       
+  scale_y_continuous(expand =  c(0,0)) +
+  theme(axis.ticks = element_blank(), 
+        plot.title = element_text(size=20))+
+  guides(fill = guide_legend(reverse = TRUE, title="")) +
+  scale_y_continuous(breaks = c(.35,.95), 
+                     labels = c("In accident","Not in accident"), 
+                     position = "right")+
+  theme(axis.ticks = element_blank(),
+        axis.text.y = element_text(angle = -90,size = 16)) 
+
+```
+
+
+## Toxoplasma & Car Wrecks. Uncertainty
+
+
+We <font color = "steelblue">estimate</font> that the odds of being in a car wreck is 5.2 for those with, than those without toxoplasma.   
+
+We know that estimates are associated with uncertainty.  
+
+We can quantify this! 
+
+<div style= "float:left;position: relative; top: 0px;">
+<img src = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Car_crash_1.jpg/1920px-Car_crash_1.jpg" width = 50%>
+</div> 
+
+## Toxoplasma & Car Wrecks. 95% CI [1/2]
+
+
+1st know that that standard error for the odds ratio cannot be directly computed, but the standard error of the log odds can! 
+
+$$SE[ln(\widehat{OR})] = \sqrt{\frac{1}{a} + \frac{1}{b} + \frac{1}{c} + \frac{1}{d}}$$
+
+Then to find the 95% CI  
+
+1. Calculate $SE[ln(\widehat{OR})]$    
+
+2. Find the confidence limits of the log-odds as $SE[ln(\widehat{OR})] \pm 2 \times  SE[ln(\widehat{OR})]$   
+
+3. Exponentiate this result to get back to linear scale <font color = "lightgrey">(if you like)</font>  
+
+
+## Toxoplasma & Car Wrecks. 95% CI [2/2]
+
+
+1. $SE[ln(\widehat{OR})] =  \sqrt{\frac{1}{61} + \frac{1}{124} + \frac{1}{16} + \frac{1}{169}} = `r round(sqrt(1/61 + 1/124 + 1/16 +1/169), digits = 3)`$    
+
+2. Find the 95% CI as $SE[ln(\widehat{OR})] \pm 2 \times  SE[ln(\widehat{OR})]$      
+$= SE[ln(5.2)] \pm 2 \times `r round(sqrt(1/61 + 1/124 + 1/16 +1/169), digits = 3)`$   
+$= 1.64 \pm `r 2 * round(sqrt(1/61 + 1/124 + 1/16 +1/169), digits = 3)`$    
+95% CI of $ln(\widehat{OR})$ is between 0.42 and 2.86
+
+
+3. 95% CI of $\widehat{OR}$ =  `exp(c(0.42, 2.86))` =    `r round(exp(c(0.42, 2.86)),digits = 1)` 
+
+
+<font color = "red">CONCLUSION<br> -  The odds of getting in an accident are plausibly between 1.5 and 17.5 times higher for people with than without toxoplasma. <br> -  Because the 95% CI does not contain 1, we reject the null hypothesis and conclude that there is  an association between toxoplasma infection and car accidents.</font>
+
+
+
+
+# Testing Associations Between Categorical Variables 
+
+<font color = "Coral">$\chi^2$ Contingency Tests</font>  
+<font color = "Coral">Fisher's Exact Test</font>  
+
+
+
+
+## $\chi^2$ Contingency  Test of Independence  
+
+Remember: The multiplicatation rule states that if two outcomes, A & B are independent, $P[A \& B] = P[A] \times P[B]$</font>  
+
+So, we have our expectation under the null hypotheseis that A & B are independent. 
+
+We can test if our deviation from this expectation is unexpected under the null from the $\chi^2$ test!
+
+
+## Calculating $\chi^2$ & Degrees of Freedom  
+
+Remember: $\chi^2$ is the sum of deviations between expectations and observations, <font color = "lightgrey">i and j are rows and columns, respectively.</font>
+
+$$\sum_i \sum_k{\frac{{(\text{Observed}_{i,j}-\text{Expected}_{i,j})^2}}{\text{Expected}_{i,j}}}$$
+
+$$\text{Degrees of freedom  = } (n_\text{rows} - 1) \times (n_\text{columns} - 1)$$
+
+
+## Example: Abandonment Issues  
+
+
+<div style= "float:left;position: relative; top: 0px; left: -20px;">
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Abandoned_Nest_%28150169677%29.jpeg/320px-Abandoned_Nest_%28150169677%29.jpeg)
+</div> 
+
+What's a bird to do when the rent is do and they can't feed `r ji("bug")` their `r ji("hatching_chick")`?   
+
+[Kloskowski](https://datadryad.org/resource/doi:10.5061/dryad.6k417tm) tested the idea that birds in poor habitats abandon their final egg `r ji("egg")`. 
+
+## Abandonment Issues  Plot
+
+
+<div style= "float:left;position: relative; top: 0px; left: -20px;">
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Abandoned_Nest_%28150169677%29.jpeg/320px-Abandoned_Nest_%28150169677%29.jpeg)
+</div> 
+
+What's a bird to do when the rent is do and they can't feed `r ji("bug")` their `r ji("hatching_chick")`?   
+
+[Kloskowski](https://datadryad.org/resource/doi:10.5061/dryad.6k417tm) tested the idea that birds in poor habitats abandon their final egg `r ji("egg")`. The data are plotted below. 
+
+```{r fig.height=3.2}
+birds <- read_excel("data/Post-laying clutch reduction Dryad Dataset.xls")
+
+
+birds %>% 
+  ggplot(aes(fill= `Habitat quality`, x = `Last egg`)) +
+  geom_bar(position = "dodge") + 
+  annotate(geom = "text", x = c(.8,1.2,1.8,2.2), y = c(-2,-2,-2,-2), 
+           label = c("High","Low","High","Low"))+
+  xlab("Last egg") +
+  scale_fill_manual(values  = c("pink","purple"))+
+  theme_tufte() + 
+  yb_theme    + 
+  theme(legend.position = c(0.2, 0.8), 
+        axis.ticks = element_blank()) + 
+  guides(fill = guide_legend( title="Habitat quality"))
+```
+
+
+
+## Abandonment Issues  Plot Code
+
+[Kloskowski](https://datadryad.org/resource/doi:10.5061/dryad.6k417tm) download  data from this link
+
+```{r fig.height=3.2, echo = TRUE, eval=FALSE}
+birds <- read_excel("data/Post-laying clutch reduction Dryad Dataset.xls")
+
+# code for a scaled down version of this plot
+
+birds %>% 
+  ggplot(aes(fill= `Habitat quality`, x = `Last egg`)) +
+  geom_bar(position = "dodge") + 
+  annotate(geom = "text", 
+           x = c(.8,1.2,1.8,2.2), 
+           y = c(-2,-2,-2,-2), 
+           label = c("High","Low","High","Low"))+
+  scale_fill_manual(values  = c("pink","purple"))+
+  theme(legend.position = c(0.2, 0.8), 
+        axis.ticks = element_blank()) + 
+  guides(fill = guide_legend( title="Habitat quality"))
+```
+
+
+## Abandonment:  Hypotheses  
+
+<font size= 7><font color = "purple"> $H_0$: </font>  `r ji("egg")`  There <font color =  "purple">is NO association</font> between habitat quality & the chance of abandoning the last egg 
+
+<font color = "gold"> $H_A$: </font>  `r ji("egg")`  There <font color = "gold">is AN association</font> between habitat quality & the chance of abandoning the last egg</font>
+
+
+
+## Abandonment: Observations
+
+
+
+```{r,echo=FALSE}
+birds2 <- birds                                    %>% 
+  group_by(`Habitat quality`,`Last egg`)           %>% 
+  summarize(observed = n())                        %>% 
+  mutate(n.habitat = sum(observed))  %>% ungroup() %>%                   
+  group_by(`Last egg`)                             %>%
+  mutate(n.egg     = sum(observed))                %>% ungroup()                                                                           ;kable(birds2, digits = 2) %>% kable_styling(full_width = FALSE,font_size = 26) ;
+#birds2
+```
+
+
+Find null expectations!!!!!! 
+
+## Abandonment: Null Expectations
+
+
+Multiply proportions by each other and sample to find null expectations. $E[n(A,B) | n]  = n \times P[A] \times P[B]$ 
+
+
+
+
+```{r warning = FALSE, echo = FALSE}
+birds.summary <- birds2  %>%   
+  mutate(p.habitat = n.habitat         / sum(observed),
+         p.egg     = n.egg             / sum(observed),
+         expected  = p.habitat * p.egg * sum(observed))                                     %>% select(-n.habitat, - n.egg)                                                                        ;kable(birds.summary, digits = 2) %>%  kable_styling(full_width = FALSE,font_size = 26) 
+```
+
+## Abandonment: Null Expectations Code
+
+
+Multiply proportions by each other and sample to find null expectations. $E[n(A,B) | n]  = n \times P[A] \times P[B]$ 
+
+```{r eval = FALSE, echo = TRUE}
+birds2 <- birds                                    %>% 
+  group_by(`Habitat quality`,`Last egg`)           %>% 
+  summarize(observed = n())                        %>% 
+  mutate(n.habitat = sum(observed))  %>% ungroup() %>%                   
+  group_by(`Last egg`)                             %>%
+  mutate(n.egg     = sum(observed))                %>%
+  ungroup()  
+
+birds.summary <- birds2  %>%   
+  mutate(p.habitat = n.habitat         / sum(observed),
+         p.egg     = n.egg             / sum(observed),
+         expected  = p.habitat * p.egg * sum(observed))                                     %>% select(-n.habitat, - n.egg)
+```
+
+
+## Abandonment:  $\chi^2$ Assumptions?
+
+
+<font size = 7> Remember assumptions</font>
+
+
+- No more than 20% of categories have Expected $< 5$
+
+- No category with Expected $\leq 1$
+
+
+
+```{r warning = FALSE, echo = FALSE}
+kable(birds.summary, digits = 2) %>%  
+  kable_styling(full_width = FALSE,font_size = 26) 
+#birds.summary
+```
+
+
+
+
+
+
+
+
+## Abandonment: $\chi^2$ 
+
+
+Remember: $\chi^2$ is the sum of the squared deviations from expected counts divided by expected counts. $$\sum \frac{(\text{Observed}-\text{Expected})^2}{\text{Expected}}$$   
+
+$$\frac{( `r round(birds.summary[1,"observed"],digits = 1)`-`r round( birds.summary[1,"expected"],digits = 1)`)^2}{`r round(birds.summary[1,"expected"],digits = 1)`} +  \frac{( `r round(birds.summary[2,"observed"],digits = 1)`-`r round( birds.summary[2,"expected"],digits = 1)`)^2}{`r round(birds.summary[2,"expected"],digits = 1)`} + \frac{( `r round(birds.summary[3,"observed"],digits = 1)`-`r round( birds.summary[3,"expected"],digits = 1)`)^2}{`r round(birds.summary[3,"expected"],digits = 1)`} +  \frac{( `r round(birds.summary[4,"observed"],digits = 1)`-`r round( birds.summary[4,"expected"],digits = 1)`)^2}{`r round(birds.summary[4,"expected"],digits = 1)`}$$
+
+```{r echo=FALSE}
+birds.chi <- birds.summary %>%
+  mutate(squared.dev = (observed - expected)^2/expected) %>%
+  summarise(chi2     = sum(squared.dev))                                         %>% pull()  
+```
+
+<font size = 10>So $\chi^2 = `r round(birds.chi, digits = 2)`$</font>
+
+## Abandonment: Degrees of Freedom  
+
+$$df =  (n_\text{columns} - 1) \times    (n_\text{rows} - 1)$$  
+
+$$df =  (2 - 1) \times    (2 - 1) = 1$$
+
+
+## Abandonment: Critical & P-values
+
+$\chi^2 = `r round(birds.chi, digits = 2)` \text{ & }df = 1$. 
+
+```{r}
+ x <- data.frame(rbind( qchisq(p = 10^(-1:-8), df = 1, lower.tail = FALSE),  
+                  qchisq(p = 10^(-1:-8), df = 2, lower.tail = FALSE)))
+colnames(x) <- 10^(-1:-8)
+rownames(x) <- c("df = 1", "df = 2")
+
+x[1,7] <- "<span style=\" background: yellow;\" >28.4</span>"
+x[2,7] <- 32.2
+kable(x, digits = 1, caption = "Critical value at for df in rows and alpha level in columns", escape = F) %>% kable_styling( )
+```
+
+We're significant at the $1e-7$ level`r ji("bangbang")`  
+We reject the $H_0$ and conclude that `r ji("bird")` abandon `r ji("egg")` in `r ji("trash")`. 
+
+We can use a computer prorgam to find that the exact p-value is  
+`pchisq(q = birds.chi, df = 1, lower.tail = FALSE)`   
+`= 8.96e-08`   
+
+
+## One tailed test?
+
+Note that we only looked at one tail of the $\chi^2$ distribution.
+
+This <font color = "black">does not mean that we only notice an association</font> in one direction. 
+
+Both ways to be exceptional <font color = "lightgrey">(an association between abandonment and poor environments OR an association between abandonment and good environments)</font> yield a strong discrepancy between observations and expectations, and can generate a significant association.  
+
+
+
+## Example: Nuptial Gifts  
+
+Sometimes, females of the Australian redback spider <font color = "black">Latrodectus hasselti</font> eat there mates. Is there anything in it for the males? 
+
+Maydianne Andrade tested the idea that eating a male might distract a female & prevent her for remating with a $2^\text{nd}$ male. 
+
+
+
+<div style= "float:left; position: relative; bottom: 0px;">
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Red_back_underside.jpg/240px-Red_back_underside.jpg)
+</div>  
+
+<br><br><br><br><br><br><br><br>
+
+<font color = "lightgrey">Andrade, M. 1996. Science  271: 70-72  [link](http://science.sciencemag.org/content/271/5245/70)</font>
+
+
+
+
+## Nuptial Gift: Observed & Expected
+
+
+
+```{r,echo=FALSE, fig.height = 2.5, fig.width=5}
+spider <- tibble(Male_2 = c("Accepted","Rejected","Accepted","Rejected"),
+       Male_1 = c("Eaten","Eaten","Escaped","Escaped"),
+       observed = c(3, 6, 22, 1)) 
+
+ggplot(spider ,aes(x =  Male_1, y = observed, fill= Male_2)) +
+  geom_bar(position = "dodge", stat = "identity") + 
+  xlab("Male 1") +
+  scale_fill_manual(values  = c("grey","firebrick"))+
+  theme_tufte() + 
+  yb_theme    + 
+  guides(fill = guide_legend( title="Male 2"))+
+  theme(axis.ticks = element_blank()) 
+```
+
+
+
+```{r warning = FALSE, echo = FALSE}
+spider <- tibble(Male_2 = c("Accepted","Rejected","Accepted","Rejected"),
+       Male_1 = c("Eaten","Eaten","Escaped","Escaped"),
+       observed = c(3, 6, 22, 1)) 
+
+# note this is one way to accomplish this. im not sure its a good way 
+spider.summary <- spider                                 %>%  
+  group_by(Male_1)                                       %>%
+  mutate(n.Male_1 = sum(observed))                       %>% 
+  ungroup()                                              %>%
+  group_by(Male_2)                                       %>%
+  mutate(n.Male_2   = sum(observed))                     %>%  
+  ungroup()                                              %>%
+  mutate(p.Male1 = n.Male_1 / sum(observed),
+         p.Male2 = n.Male_2 / sum(observed),
+         expected  = p.Male1 * p.Male2 * sum(observed))  %>% 
+  select(-n.Male_1, - n.Male_2) 
+kable(spider.summary, digits = 2) %>%  kable_styling(font_size = 18) 
+```
+
+## Nuptial Gift: Finding  Expected
+
+```{r, echo=TRUE, eval=FALSE}
+spider.summary <- spider                                 %>%  
+  group_by(Male_1)                                       %>%
+  mutate(n.Male_1 = sum(observed))                       %>% 
+  ungroup()                                              %>%
+  group_by(Male_2)                                       %>%
+  mutate(n.Male_2   = sum(observed))                     %>%  
+  ungroup()                                              %>%
+  mutate(p.Male1 = n.Male_1 / sum(observed),
+         p.Male2 = n.Male_2 / sum(observed),
+         expected  = p.Male1 * p.Male2 * sum(observed))  %>% 
+  select(-n.Male_1, - n.Male_2) 
+```
+
+## Nuptial Gift:  $\chi^2$ Assumptions?
+
+
+<font size = 7> Remember assumptions</font>
+
+
+- No more than 20% of categories have Expected $< 5$
+
+- No category with Expected $\leq 1$
+
+<font size = 7>We do not meet assumptions `r ji("sad")`  </font>
+
+```{r}
+kable(spider.summary, digits = 2) %>%  kable_styling(font_size = 18) 
+```
+
+## The Fisher's Exact Test   
+
+Generates all possible permutations of your data. 
+
+It asks what proportion of configurations result in associations as or more extreme than observed.   
+
+`fisher.test(spider.spread )`
+
+```{r, echo=TRUE, eval = FALSE}
+spider.spread <- spread(spider,key = Male_2, value = observed )%>% 
+  select(-"Male_1")
+fisher.test(spider.spread) 
+```
+
+```{r}
+with( fisher.test(spread(spider,key = Male_2, value = observed )%>% select(-"Male_1") ) , 
+      cbind(method, lower.95 = round(conf.int[1],digits = 4),
+            upper.95 = round(conf.int[2], digits = 4),
+            odds_ratio = round(estimate, digits = 4), 
+            p.value = round(p.value, digits = 4)))  %>%
+  kable() %>% 
+  kable_styling(font_size = 18)
+```
+
+
+We reject the null hypothesis `r ji("bangbang")`  
+
+## Doing our own permutations   
+
+$1^{st}$ tidy data by going from  this on left, to this on right 
+
+<div style= "float:left; position: relative; bottom: 0px;">
+
+```{r}
+kable(spider) %>% kable_styling(full_width = FALSE)
+```
+
+</div>
+
+
+<div style= "float:right; position: relative; bottom: 0px;">
+
+```{r}
+spider %>%  
+  uncount(weights = observed) %>% 
+  kable() %>%
+  kable_styling()%>%
+  scroll_box(height = "350px", width = "350px") 
+```
+</div>
+
+
+<br> <br><br><br><br><br><br><br><br>  
+
+By doing this
+
+```{r, echo=TRUE}
+disaggregated.spider <-  spider %>%  
+  uncount(weights = observed)            
+```
+
+## Doing our own permutations!   
+
+
+```{r, echo=TRUE, eval=TRUE}
+obs.diff <- disaggregated.spider%>%
+  summarise(obs      = mean(Male_2 == "Rejected" & Male_1 == "Eaten" ), 
+            expect   = mean(Male_2 == "Rejected") *  mean(Male_1 == "Eaten"),
+            differ   = abs(obs - expect)) %>%
+  select(differ) %>%  pull()
+
+disaggregated.spider %>% 
+  rep_sample_n(size = nrow(disaggregated.spider), 
+               reps = 500000) %>%
+  mutate(Male_1 = sample(Male_1, size = n(), replace = FALSE)) %>%
+  group_by(replicate) %>%
+  summarise(obs    = mean(  Male_2 == "Rejected" & Male_1 == "Eaten" ), 
+            expect = mean(Male_2 == "Rejected") *  mean(Male_1 == "Eaten"),
+            differ = abs(obs - expect)) %>%
+  mutate(as.extreme =  differ >= obs.diff ) %>%
+  summarise(mean(as.extreme)) %>% pull()  # Our p-value!
+```
