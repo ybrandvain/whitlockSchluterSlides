@@ -1,0 +1,378 @@
+---
+title: "Ch 07 Analyzing Proportions"
+date: "`r Sys.Date()`"
+output: powerpoint_presentation
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(forcats)
+library(dplyr)
+library(ggplot2)
+library(ggforce)
+library(tidyr)
+library(stringr)
+library(knitr)
+library(ggthemes)
+library(wesanderson)
+library(emo)
+library(forcats)
+library(ggmosaic)
+library(ggridges)
+library(kableExtra)
+library(gridExtra)
+library(ggrepel)
+library(RColorBrewer)
+library(plotly)
+library(readr)
+library(stringr)
+library(infer)
+library(emoGG)
+students <- c("Jozee Becher","Bailey Berg","Ariadna Mondragon Botero","Jacob Botkin","Carl Branch","Jessica Bruggen","Natalia Calixto Mancipe","Rafael Della Coletta","Shale Demuth","Sarah Durkot","Mitchell Fang","Kylie Frohmader","Joe Gagne","Sydney Grubb","Winston Guo","Lydia Gusaas","Amal Halane","Payton Harper","Anna Harris","Annika Herdtle","Nathan Hoekstra","Jennifer Holt","Adrienne Irmiter","Nick Jones","Julia Kancans","Alexander Kaplan","Phineas Koutlas","Molly Kuhs","Damon Leach","Benjamin Marquardt","Zachary Mayer","Thomas McCullough","Taryn Mueller","Dane Munson","Gayatri Narayanan","Kelsey Peterson","Matthew Pullen","Jonathon Ross","Ellen Saurer","Ayesha Sohail","Julian Spencer","Arzang Syed","Sangeitha Thayalan","Cristina Toapanta","Heather Tuttle","Benjamin Van Raalte","Eric Warme","Bryce Wick","Megan Wilcots","Max Zaret")
+
+yb_theme <-   theme(axis.text.x=element_text(size=14),
+        axis.text.y=element_text(size=14),
+        axis.title.x = element_text(size=16),
+        axis.title.y = element_text(size=16),
+        legend.title = element_text(size=16),
+        legend.text = element_text(size=14),
+        plot.title = element_text(size=18),
+        strip.text =  element_text(size=14)) 
+butter.down <- 6101
+slices      <- 9821
+prop.down   <- butter.down / slices
+
+
+```
+
+
+
+
+## Proportions 
+
+<font size = 7, color = "STEELBLUE">A proportion is the fraction of individuals having a particular attribute.</font> 
+
+
+
+
+## Example: Murphy's law `r ji("bread")` 
+
+```{r}
+butter.down <- 6101
+slices      <- 9821
+prop.down   <- butter.down / slices
+```
+
+
+Is the deck stacked against us? 
+
+Researchers  found that <font color = "black"> <font size = 10>`r butter.down`</font> of the  <font size = 10>`r slices`</font></font> slices of toast thrown in the air  <font size = 10  color = "black"> landed butter side down</font> 
+
+<font size = 8, color = "purple">What proportion of slices landed butter side down?</font>
+
+
+## Answer: Murphy's law `r ji("bread")` `r ji("bread")` 
+
+Is the deck stacked against us? 
+
+Researchers  found that <font color = "black"> <font size = 10>`r butter.down`</font> of the  <font size = 10>`r slices`</font></font> slices of toast thrown in the air  <font size = 10  color = "black"> landed butter side down</font> 
+
+
+<font size = 8, color = "purple">The proportion of slices landed butter side down equals:</font>
+
+$$\frac{\text{butter side up}}{\text{# slices}} = \frac{`r butter.down`}{`r slices`} = `r round(prop.down, digits = 2)`$$
+
+## From Proportions to the Binomial 
+
+<font size = 6>
+Assume that the <font color = "lightsalmon">true probability</font> that toast falls <font color = "lightsalmon">butter side down is `r paste(100 * round(prop.down, digits = 1),"%", sep = "")`. </font>
+
+If three people drop their slice of toast, what is the probability that <font color = "black">one falls butter side down and  two fall butter side up?</font>
+
+HINT: Draw trees... 
+
+</font>
+
+
+## P[1 of 3 Slices Butter Side Down] <font color = "lightgrey">1 of 4</font>
+
+First draw a tree
+
+```{r,echo=FALSE, fig.height=5}
+  par(mar = c(1,2,0,5))
+  plot(0,type="n",axes=F,xlab="",ylab="",xlim=c(0,4.2),ylim=c(0,1), main = "")
+
+arrows(x0 = rep(.05,2), y0 = rep(.45,2), x1 = rep(.5,2), y1 = c(.7,.2) )
+  text(x= rep(.1,2), y = c(.6,.3), c("2/5","3/5")  )
+  text(x= rep(.75,3), y = c(.95,.7,.2), c("1st slice"," up","down")  )
+
+this.x0 <- 1
+this.y1 <- c(.8,.6,.3,.1)
+arrows(x0 = rep(this.x0,4), y0 = rep(c(.7,.2),each=2), x1 = rep((.5+this.x0),4), y1 = this.y1)
+  text(x= rep(this.x0 + .75,5), y = c(.95,this.y1), c("2nd slice",rep(c(" up","down"),2)  ))
+  text(x= rep(this.x0 + .15,4), y = this.y1, rep(c("2/5","3/5"),2)  )
+
+new.x0 <- 2
+new.y1 <-    c(.87,.72,.64,.50,.40,.26,.17,.03)
+new.y1mod <- c(.85,.74,.62,.52,.38,.28,.15,.05)
+arrows(x0 = rep(new.x0,8), y0 = rep(this.y1+c(0,-.03,+.03,0),each=2), 
+       x1 = rep((.5+new.x0),4), y1 = new.y1)
+  text(x= rep(new.x0 + .125,4), y = new.y1, rep(c("2/5","3/5"),4)  )
+  text(x= c(new.x0 +.7,rep(new.x0 + .75,4)), y = c(.95,new.y1mod),c("3rd slice", rep(c(" up","down"),4)  ))
+```
+
+
+
+
+## P[1 of 3 Slices Butter Side Down] <font color = "lightgrey">2 of 4</font>
+
+Then, work out probabilities 
+
+```{r,echo=FALSE, fig.height=5}
+  par(mar = c(1,2,0,5))
+  plot(0,type="n",axes=F,xlab="",ylab="",xlim=c(0,4.2),ylim=c(0,1), main = "")
+
+arrows(x0 = rep(.05,2), y0 = rep(.45,2), x1 = rep(.5,2), y1 = c(.7,.2) )
+  text(x= rep(.1,2), y = c(.6,.3), c("2/5","3/5")  )
+  text(x= rep(.75,3), y = c(.95,.7,.2), c("1st slice"," up","down")  )
+
+this.x0 <- 1
+this.y1 <- c(.8,.6,.3,.1)
+arrows(x0 = rep(this.x0,4), y0 = rep(c(.7,.2),each=2), x1 = rep((.5+this.x0),4), y1 = this.y1)
+  text(x= rep(this.x0 + .75,5), y = c(.95,this.y1), c("2nd slice",rep(c(" up","down"),2)  ))
+  text(x= rep(this.x0 + .15,4), y = this.y1, rep(c("2/5","3/5"),2)  )
+
+new.x0 <- 2
+new.y1 <-    c(.87,.72,.64,.50,.40,.26,.17,.03)
+new.y1mod <- c(.85,.74,.62,.52,.38,.28,.15,.05)
+arrows(x0 = rep(new.x0,8), y0 = rep(this.y1+c(0,-.03,+.03,0),each=2), 
+       x1 = rep((.5+new.x0),4), y1 = new.y1)
+  text(x= rep(new.x0 + .125,4), y = new.y1, rep(c("2/5","3/5"),4)  )
+  text(x= c(new.x0 +.7,rep(new.x0 + .75,4)), y = c(.95,new.y1mod),c("3rd slice", rep(c(" up","down"),4)  ))
+  text(x= rep(new.x0 + 1.35,5), y = c(.95,new.y1mod), c("probability","2/5 * 2/5 * 2/5","2/5 * 2/5 * 3/5" , 
+                                                        "2/5 * 3/5 * 2/5"  , "2/5 * 3/5 * 3/5",
+                                                        "3/5 * 2/5 * 2/5", "3/5 * 2/5 * 3/5",
+                                                        "3/5 * 3/5 * 2/5", "3/5 * 3/5 * 3/5"))
+```
+
+
+
+## P[1 of 3 Slices Butter Side Down] <font color = "lightgrey">3 of 4</font>
+
+Finally, count the ways to get desired outcome
+
+```{r,echo=FALSE, fig.height=5}
+  par(mar = c(1,2,0,5))
+  plot(0,type="n",axes=F,xlab="",ylab="",xlim=c(0,4.2),ylim=c(0,1), main = "")
+
+arrows(x0 = rep(.05,2), y0 = rep(.45,2), x1 = rep(.5,2), y1 = c(.7,.2) )
+  text(x= rep(.1,2), y = c(.6,.3), c("2/5","3/5")  )
+  text(x= rep(.75,3), y = c(.95,.7,.2), c("1st slice"," up","down")  )
+
+this.x0 <- 1
+this.y1 <- c(.8,.6,.3,.1)
+arrows(x0 = rep(this.x0,4), y0 = rep(c(.7,.2),each=2), x1 = rep((.5+this.x0),4), y1 = this.y1)
+  text(x= rep(this.x0 + .75,5), y = c(.95,this.y1), c("2nd slice",rep(c(" up","down"),2)  ))
+  text(x= rep(this.x0 + .15,4), y = this.y1, rep(c("2/5","3/5"),2)  )
+
+new.x0 <- 2
+new.y1 <-    c(.87,.72,.64,.50,.40,.26,.17,.03)
+new.y1mod <- c(.85,.74,.62,.52,.38,.28,.15,.05)
+arrows(x0 = rep(new.x0,8), y0 = rep(this.y1+c(0,-.03,+.03,0),each=2), 
+       x1 = rep((.5+new.x0),4), y1 = new.y1)
+  text(x= rep(new.x0 + .125,4), y = new.y1, rep(c("2/5","3/5"),4)  )
+  text(x= c(new.x0 +.7,rep(new.x0 + .75,4)), y = c(.95,new.y1mod),c("3rd slice", rep(c(" up","down"),4)  ))
+  text(x= rep(new.x0 + 2,5), y = c(.95,new.y1mod), c("# down","0","1" , "1"  , "2","1", "2", "2", "3"), 
+       col = c("black","black","red","red","black","red","black","black","black"))
+  text(x= rep(new.x0 + 1.35,5), y = c(.95,new.y1mod), c("probability","2/5 * 2/5 * 2/5","2/5 * 2/5 * 3/5" , 
+                                                        "2/5 * 3/5 * 2/5"  , "2/5 * 3/5 * 3/5",
+                                                        "3/5 * 2/5 * 2/5", "3/5 * 2/5 * 3/5",
+                                                        "3/5 * 3/5 * 2/5", "3/5 * 3/5 * 3/5"), col = c("black","lightgrey","red","red","lightgrey","red","lightgrey","lightgrey","lightgrey"))
+```
+
+
+## P[1 of 3 Slices Butter Side Down] <font color = "lightgrey">4 of 4</font>
+
+$3 \times \frac{2}{5} \times  \frac{2}{5}  \times  \frac {3}{5} = `r 3 * (2/5) * (2/5)* (3/5)`$  
+
+```{r,echo=FALSE, fig.height=5}
+  par(mar = c(1,2,0,5))
+  plot(0,type="n",axes=F,xlab="",ylab="",xlim=c(0,4.2),ylim=c(0,1), main = "")
+
+arrows(x0 = rep(.05,2), y0 = rep(.45,2), x1 = rep(.5,2), y1 = c(.7,.2) )
+  text(x= rep(.1,2), y = c(.6,.3), c("2/5","3/5")  )
+  text(x= rep(.75,3), y = c(.95,.7,.2), c("1st slice"," up","down")  )
+
+this.x0 <- 1
+this.y1 <- c(.8,.6,.3,.1)
+arrows(x0 = rep(this.x0,4), y0 = rep(c(.7,.2),each=2), x1 = rep((.5+this.x0),4), y1 = this.y1)
+  text(x= rep(this.x0 + .75,5), y = c(.95,this.y1), c("2nd slice",rep(c(" up","down"),2)  ))
+  text(x= rep(this.x0 + .15,4), y = this.y1, rep(c("2/5","3/5"),2)  )
+
+new.x0 <- 2
+new.y1 <-    c(.87,.72,.64,.50,.40,.26,.17,.03)
+new.y1mod <- c(.85,.74,.62,.52,.38,.28,.15,.05)
+arrows(x0 = rep(new.x0,8), y0 = rep(this.y1+c(0,-.03,+.03,0),each=2), 
+       x1 = rep((.5+new.x0),4), y1 = new.y1)
+  text(x= rep(new.x0 + .125,4), y = new.y1, rep(c("2/5","3/5"),4)  )
+  text(x= c(new.x0 +.7,rep(new.x0 + .75,4)), y = c(.95,new.y1mod),c("3rd slice", rep(c(" up","down"),4)  ))
+  text(x= rep(new.x0 + 2,5), y = c(.95,new.y1mod), c("# down","0","1" , "1"  , "2","1", "2", "2", "3"), 
+       col = c("black","black","red","red","black","red","black","black","black"))
+  text(x= rep(new.x0 + 1.35,5), y = c(.95,new.y1mod), c("probability","2/5 * 2/5 * 2/5","2/5 * 2/5 * 3/5" , 
+                                                        "2/5 * 3/5 * 2/5"  , "2/5 * 3/5 * 3/5",
+                                                        "3/5 * 2/5 * 2/5", "3/5 * 2/5 * 3/5",
+                                                        "3/5 * 3/5 * 2/5", "3/5 * 3/5 * 3/5"), col = c("black","lightgrey","red","red","lightgrey","red","lightgrey","lightgrey","lightgrey"))
+```
+
+
+
+## Binomial Distribution: Idea `r ji("bulb")`
+
+<font size = 10> The probability of a given number of *"successes"* from a fixed number of independent trials.</font>
+
+## n Trials; p Probability of X Successes  
+
+
+The probability of X successes.
+
+$$Pr[X] = {n \choose X} p^X (1-p)^{n-X}$$    
+
+Pr[X] = Binomial coef. * Prob[X successes, then n - X failures]
+
+
+## Looking Into the Binomial Coefficient
+
+
+${n \choose X}$ describes the number of ways to get X successes in n trials.   
+
+
+
+$${n \choose X} =\frac{n!}{X!(n-X)!}$$
+
+## Revisiting the Binomial  Distribution
+
+
+The probability of X successes.
+
+$$Pr[X] = {n \choose X} p^X (1-p)^{n-X}$$   
+
+
+
+<br><br><br><br><br><br><br><br> Take a minute. Explain the  to your neighbor. Try to make sense of this. Try to read the logic of probability in this equation.   
+
+## Expected Successes of n Binomial Trials 
+
+<br><br><br>
+
+$$\Huge{\mu = n \times p}$$
+<br><br><br><br><br>
+
+<font color = "lightgrey"> Probability Trivia: A binomial with n = 1 is called a Bernoulli process. This will not be a factoid you need to know in this class, but you might hear it some time.</font>
+
+
+## Binomial: Variability and Uncertainty
+
+For counts: 
+
+$$\text{population variance: } \sigma^2 = n \times p \times(1-p)$$ 
+
+<font color = "lightgrey">Math proof at end of class is time. As extra credit if no time.</font>
+
+$$\text{sample variance: }s^2 = \frac{n}{n - 1} \times p \times(1-p)$$
+
+
+
+## Properties of proportions 
+
+
+Proportion of successes in a sample $\hat{p} = \frac{X}{n}$  
+<font color = "lightgrey"> The hat ($\hat{`r ji("billed_hat")`}$) shows that this is an estimate of $p$</font>
+
+
+
+***Expectations of Proportions***  
+
+$\text{Mean: } p$
+
+$\text{Variance: } \sigma^2 =  p(1-p)$.   $\text{Standard deviation: } \sigma =  \sqrt{p(1-p)}$
+
+$\text{Sample Variance: } s^2 =  p(1-p) \frac{n}{n-1}$.  $\text{Sample Standard deviation: } \sigma =  \sqrt{p(1-p) \frac{n}{n-1}}$  
+
+$\text{Sample Standard Error: } = s / \sqrt{n}$  
+
+
+# The Binomial Test
+
+Testing $H_0$ that $\hat{p}$ comes from a population with proportion $p$.
+
+## The Binomial Test: $H_0$ and $H_A$  
+
+<font size = 7, color = "black">Null hypothesis:</font>   
+
+*The sample proportion comes from a population with a probability of success <font color = "black"> equal to</font> p.*
+
+
+<font size = 7, color = "black">Alternate hypothesis:</font>  
+
+*The sample proportion comes from a population with a probability of success that <font color = "black">does not equal</font> p.*
+
+
+## Binomial Test Example `r ji("bread")` <font color = "lightgrey">1 of 3</font>  
+
+Researchers  found that <font color = "black"> <font size = 10>`r butter.down`</font> of the  <font size = 10>`r slices`</font></font> slices of toast thrown in the air  <font size = 10  color = "black"> landed butter side down</font> 
+
+<font size = 8, color = "purple">What is the probability that we would see a result this or more extreme if toast has a fifty-fifty chance of landing butter side down?</font>
+
+
+## Binomial Test Example `r ji("bread")` <font color = "lightgrey">2 of 3</font>  
+
+$p_0 = .5$,   $\hat{p} = 0.621$,  $X = 6101$,    $n = 9821$.   
+
+
+$p = \sum_{X = 6101}^{X = 9821}  {9821 \choose X} .5^X (.5)^{9821-X} + \sum_{X = 0}^{X = 3719}  {9821 \choose X} .5^X (.5)^{9821-X}$  
+
+
+
+```{r, fig.height=4}
+tibble(x = c(1:9820)) %>% mutate(prob = dbinom(x=x, size = 9821, prob = .5), as_extreme = x<=3718 | x >= 6101) %>%
+  ggplot(aes(x = x, y = prob, fill = as_extreme, color = as_extreme)) + geom_density(stat = "identity")+ theme_tufte() + yb_theme + ggtitle("A very small p-value, reject the null hypothesis") + geom_vline(xintercept = c(3719,6101), lty = 2) + xlab("Number slices better side down")
+```
+
+## We conducted a Binomial Test! 
+
+<font size = 6 >`r ji("clap")` Congrats `r ji("clap")`</font> You already conducted a hypothesis test! <font color = "black">   
+`R` can make this even easier</font>
+
+
+```{r echo=TRUE} 
+binom.test(x = butter.down, n = slices, p = .5, alternative = "two.sided")
+```
+
+## The Binomial Test: What Does it Mean?
+
+What does this mean? Discuss be prepared  to explain all parts...
+
+
+```{r echo=TRUE} 
+binom.test(x = butter.down, n = slices, p = .5, alternative = "two.sided")
+```
+
+
+## An Aside: 95% CIs for the Binomial  
+
+
+
+For many parameter values, the binomial distribution is not symmetric about its mean.  This is one reason why the 2 SE rule of thumb does not find 95% CIs of the binomial. 
+
+
+
+
+The book suggests the Agresti-Coull CIs:    $p' = (X+2) / (n+4)$... where X  = observed # of successes    
+
+$\bigg(p' - 1.96 \sqrt{\frac{p'(1-p')}{n+4}}\bigg)$ $\leq p \leq$ $\bigg(p' + 1.96 \sqrt{\frac{p'(1-p')}{n+4}}\bigg)$
+<br><br>      
+
+<font size = 4, color = "lightgrey">Aside. There is not an agreed upon method. In `R` "*Confidence intervals are obtained by a procedure first given in Clopper and Pearson (1934). This guarantees that the confidence level is at least conf.level, but in general does not give the shortest-length confidence intervals.*" (from `help(binom.test)` in `R`)</font> 
+
