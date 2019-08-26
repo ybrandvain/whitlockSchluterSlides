@@ -1,0 +1,452 @@
+---
+title: "Ch 1. Statistics and Samples"
+subtitle: "What it's all about"
+author: "Yaniv Brandvain"
+date: "`r Sys.Date()`"
+output: powerpoint_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2) 
+library(dplyr)
+library(forcats)
+library(ggthemes)
+library(wesanderson)
+library(tidyr)
+library(mapproj)
+library(ggmosaic)
+library(gridExtra)
+library(readr)
+library(knitr)
+```
+
+
+## Key Learning  Goals  
+
+
+Understand the major goal of statistics.   
+
+Distinguish between a sample and a population.
+
+Distinguish between an estimate and a parameter. 
+
+Identify why estimates from samples may deviate from parameters of populations.  
+
+Identify the propoerties of a good sample.  
+
+
+# What's the point of statistics? 
+
+Like what are we even doing here? 
+
+## The Point of Statistics
+  
+<font size = 6, color = "black">Goal:  <font color = "grey"> We want to learn about the world.   </font>    </font>   
+
+
+<font size = 6, color = "black">Challenge: <font color = "grey"> We can't look at the whole world. </font>    </font>   
+
+
+<font size = 6, color = "black">Solution:<font color = "grey"> Take a sample and generalize outward. </font>   </font>   
+
+<font size = 6, color = "black"> New Challenge: <font color = "grey">Samples deviate from the populations by    </font>   </font>   
+
+- bad luck (sampling error) or    
+
+- unrepresentative sampling (sampling bias) 
+    
+## Statistics' Fundamental Obsession 
+
+
+<div style= "float:right; position: relative; bottom: 10px;margin-right: 10px;margin-bottom: .5em;"> 
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Plato_-_Allegory_of_the_Cave.png/256px-Plato_-_Allegory_of_the_Cave.png)  
+
+</div>
+<font size = 6>
+<font color = "black"> Question:</font>   
+How do we make inferences about the WORLD from our finite observations?  
+
+
+<font color = "black"> Answer:</font>   
+Make models to account for the process of sampling & the  associated hazards.  
+</font>  
+
+
+
+<font size = 4, color = "lightgrey"><br>   Plato's "Allegory of the Cave", drawing by Markus Maurer. Veldkamp, Gabriele. Zukunftsorientierte Gestaltung informationstechnologischer Netzwerke im Hinblick auf die Handlungsfähigkeit des Menschen. Aachener Reihe Mensch und Technik, Band 15, Verlag der Augustinus Buchhandlung, Aachen 1996, Germany. From [wikimedia commons](https://commons.wikimedia.org/wiki/File:Plato_-_Allegory_of_the_Cave.png)</font>
+
+
+
+
+
+# <font color = "steelblue">Populations</font>  & <font color = "coral">Samples</font> 
+ 
+
+##  <font color = "steelblue">Populations</font>  and <font color = "coral">Samples</font>
+
+
+<font size = 7, color = "steelblue">Parameters represent the world out there. AKA the truth.</font>  
+
+
+<font size = 7, color = "coral">Samples come from hard-fought data that we collect.</font>  
+
+
+## <font color = "steelblue">Parameters</font> versus <font color = "coral">Estimates</font>  
+
+<font  size = 7, color = "steelblue">Because we cant sample an entire population, we usually dont know parameters.</font>  "Parameters describe Populations"
+
+
+
+ <font  size = 7, color = "coral"> But we can get a good sense of the parameters from estimates we make from samples.</font>  "Estimates approximate parameters as inferred from Samples" 
+
+
+
+
+# Sampling, what could go wrong?
+
+Sampling errors and sampling bias
+
+
+
+
+## Sampling bias and sampling error
+
+
+
+<div style= "float:left; position: relative; bottom: 0px;margin-right: 30px;margin-bottom: .5em;"> 
+
+```{r biaserror, fig.height=4.5, fig.width=5,fig.align='center', warning=FALSE}
+df <-  tibble(x = rnorm(n = 64, mean = rep(c(0, 1.5), each = 32), 
+                                         sd = rep(c(1.5,  .4), each = 16)), 
+                               y = rnorm(n = 64, mean = rep(c(0, 1.5), each = 32), 
+                                         sd = rep(c(1.5,  .4), each = 16)),
+                               sample = factor(1:64),
+                               bias  = factor(rep(c("unbiased","biased"), each = 32), levels = c("unbiased","biased")),
+                               samplingerror = factor(rep(c("imprecise","precise", "imprecise", "precise"), each = 16), levels = c("precise", "imprecise")))
+
+ggplot(data = df, aes(x=x,y=y))+
+  geom_point(aes(x=0,y=0), size = 4, shape = 4, show.legend = FALSE,stroke = 3, color = "red") +
+  geom_point(size = 5, aes( color = sample),show.legend = FALSE, alpha = .4)+
+  theme_light() +
+  xlim(c(-5,5)) +
+  ylim(c(-5,5))+
+  facet_grid(vars(samplingerror), vars(bias),switch = "y")+
+  theme(strip.text.x = element_text(size = 14), 
+        strip.text.y = element_text(size = 14),
+        axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  ggtitle(label = "How sampling bias & sampling error affect estimates") 
+```
+
+
+</div>
+
+
+<br>  
+
+<font color = "black">Sampling bias</font> Systematic difference between estimates & parameters.   
+
+<br>  
+
+<font color = "black">Sampling error</font> Undirected deviation of estimates away from parameters. 
+
+<br>  
+
+<font size =5> <font color = "red"> Red x</font> is true parameter.   Colored points are estimates from a sample. </font>  
+
+
+
+# Sampling bias: Systematic differences between parameters &  estimates.
+
+
+<font color = "pink">Case study: Polls in the 1936 US Election</font>  
+
+## The 1936 Election 
+
+Republican Alf Landon.  Democrat. Franklin D. Roosevelt 
+
+<div style= "float:left; position: relative; bottom: 20px;margin-right: 40px;margin-bottom: .5em;"> 
+
+![](https://upload.wikimedia.org/wikipedia/commons/c/c6/Alf_Landon_closeupcrop.jpg)
+
+</div>
+
+<div style= "float:right; position: relative; bottom: 20px;margin-right: 40px;margin-bottom: .5em;"> 
+
+
+![](https://upload.wikimedia.org/wikipedia/commons/3/37/FDR_and_Fala_at_table.jpg)
+
+</div>  
+
+
+
+
+## 1936 Literary Digest Poll
+
+Questionnaires mailed to 10 million (2.4 million reponded) people, chosen from telephone books and club lists
+
+```{r, fig.height=4}
+ggplot(data.frame(Candidate = c("Landon","Roosevelt"), 
+                          support = 2.4 * c(.57,.43)),
+               aes(x = Candidate , y = support, fill = Candidate)) +
+  geom_bar(stat = "identity", show.legend = FALSE) +
+  theme_tufte() +
+  ylab(label = "support (millions of respondents)")+
+  geom_hline(yintercept = seq(0,1.40,.50), color = "white") +
+  coord_flip() +
+  theme(plot.title = element_text(size = 22),
+        axis.title = element_text(size = 18),
+        axis.text.x=element_text(size=16),
+        axis.text.y=element_text(size=16)) +
+  scale_y_continuous(expand = c(0,0)) +
+  ggtitle(label = "1936 literary digest poll results")
+``` 
+
+
+## Election: Roosevelt in a Landslide  
+
+
+
+```{r,message=FALSE, fig.height=5.8}
+library(maps)
+us_states <- map_data("state") %>% 
+  filter(region != "alaska")
+elect <- tibble(region = unique(us_states$region)) %>% 
+  mutate(Candidate = case_when(region %in% c("maine","vermont") ~ "Landon",
+                            !region %in% c("maine","vermont") ~ "Roosevelt")) %>%
+  left_join(us_states) %>%
+  ggplot(aes(x = long, y = lat, group = group, fill = Candidate)) +
+  geom_polygon(color = "gray90", size = 0.1) +
+  coord_map(projection = "albers", lat0 = 39, lat1 = 45)+
+  theme_map() +
+  theme(legend.text=element_text(size=16),
+        legend.title = element_text(size=18))
+
+
+vote <- ggplot(data.frame(Candidate = c("Landon","Roosevelt","Landon","Roosevelt"), 
+                          Percent_votes = c(38, 62,57,43), 
+                          survey = factor(c("Election","Election","Reader's digest","Reader's digest"),
+                                          levels = c("Reader's digest","Election"))) , 
+               aes(x = survey , y = Percent_votes, fill = Candidate)) +
+  geom_bar(stat = "identity", show.legend = FALSE, position = "dodge") +
+  theme_tufte() +
+  geom_hline(yintercept = seq(0,51,25), color = "white") +
+  coord_flip() +
+  theme(axis.title = element_text(size = 18),
+        axis.text.x=element_text(size=16),
+        axis.text.y=element_text(size=16))
+
+grid.arrange(
+  grobs = list(elect,vote),
+  heights = c(2, 1),
+  layout_matrix = rbind(c(1, 1),c(2,2))
+)
+```
+
+## Sampling Bias in the 1936  Polls
+
+Questionnaire was more likely to get to rich people (with telephones and/or in book clubs) than those with fewer means. 
+
+Voting and party preference is correlated with personal wealth. 
+
+The poorer people (underrespresented in the poll) supported Roosevelt, carrying him to victory. 
+
+
+## Volunteer bias & Samples of Convenience.
+ 
+Volunteers for a study are likely to be different, on average, from the population
+
+For example:
+
+- Volunteers for sex studies are more likely to be open about sex.  
+
+- Volunteers for medical studies may be sicker than the general population.    
+
+- Animals that are caught may be slower or more docile than those that are not.  
+
+<font color = "black">Taking random samples is hard and requires effort</font>  
+
+
+## Properties of a good sample
+
+
+<font size = 7>  
+
+A good sample is made up of a Random and Independent selection of a sufficiently large number of individuals.   
+
+</font>  
+
+
+ <br> <br>      <br>      
+
+<font color = "black">In a random sample, each member of a population has an equal and independent chance of being selected</font>
+
+
+
+## How to get a random sample
+
+Carefully characterize a population and use computer code (e.g. the `sample()` function in `R`) to select participants randomly.   
+
+![](Ch1/lecture_slides/figs/starz.jpg)
+
+
+
+
+
+
+
+## Sampling: Limitations & Interpretations
+
+Our analyses only directly related to the population we studied. 
+
+Be clear on what that population is and be honest about limits to generalization. 
+
+
+
+
+#  Sampling error
+
+## Sampling error
+
+- Even if you sample perfectly, by the book, your estimates will differ from the true parameter.  
+
+
+- The difference between the estimate and average value of the estimate.
+
+
+## <font color = "steelblue"> Parameters are constants</font>, <font color = "coral"> estimates are random variables. </font> 
+
+<font size = 7, color = "steelblue"> This means parameters are fixed. Parameters are the world. Parameters are the Truth. </font> 
+
+<font size = 7, color = "coral"> By contrast, estiamtes change from one random sample to the next from the same population. </font>   
+
+
+## Estimates are random variables 
+
+This means that the value of an estimate is influenced by chance  
+
+Therefore estimates will differ among random samples from the same population. 
+
+
+
+
+
+## Sampling error declines w sample size
+
+
+```{r,echo=FALSE,fig.height=5.5,fig.width=7, warnings = FALSE, message=FALSE}
+#sample.sizes <- rep(1:10000,each = 10)
+sample.sizes <- rep(1:10000,each = 10)
+
+a<-data.frame(estimate = sapply(sample.sizes, function(N){mean(rnorm(n = N, sd = 10))}),
+           sample.size = sample.sizes) %>%
+  ggplot(aes(x = sample.sizes, y = estimate)) +
+  geom_point(alpha = .05, size = 2) +
+  scale_x_continuous(trans = "log10") + 
+  theme_tufte()+   
+  geom_smooth(color = "red") +
+  ggtitle(label = "Estimate does not vary reliably with sample size: True param = 0")
+
+b<-data.frame(error = sapply(sample.sizes, function(N){abs(mean(rnorm(n = N, sd = 10)))}),
+           sample.size = sample.sizes) %>%
+  ggplot(aes(x = sample.sizes, y = error)) +
+  geom_point(alpha = .05, size = 3) +
+  scale_x_continuous(trans = "log10") + 
+  scale_y_continuous(trans = "log10") + 
+  geom_smooth(color = "red") + theme_tufte()+
+    ggtitle(label = "Sampling Error decreases reliably with sample size")
+
+
+grid.arrange(
+  grobs = list(b, a),
+  heights = c(1, 1),
+  layout_matrix = rbind(c(1, 1),c(2,2))
+)
+```
+
+
+
+
+## Types of variables 
+
+Variables come in different flavors
+
+<font color = "black">Numeric:</font>  
+- Discrete: can only take some values    
+- Continuous (can take any value).   
+
+<font color = "black">Categorical:</font>      
+- Ordinal: Can be ranked.   
+- Nominal: Cannot be ranked.  
+
+
+
+
+
+## Another clasification of variables 
+
+<font size = 10>
+We predict the values of <font color = "black">response</font> variables from <font color = "black">explanatory</font> variables
+</font>
+
+## Types of variables: Why do we care?  
+
+<font size = 7> Knowing what kind of variables we have drives our models of data analysis, and is therefore critical to the enterprise of statistics.</font>   
+
+## Case study: surviving the Titanic
+
+
+![](https://upload.wikimedia.org/wikipedia/commons/9/91/Titanic_struck_iceberg.jpg)
+
+## Case study: surviving the Titanic
+
+- Identify the explanatory & response variables.  
+- Identify each variable's type.   
+- Is this an experimental or observational study?  
+- Describe the population this result came from...  How far would you generalize from this to "Women & Children 1st?" 
+
+```{r titanic, fig.height=3.3}
+titan <- data.frame(rbind(colSums(Titanic)[,,1],colSums(Titanic)[,,2]) )%>% 
+  mutate(fate   = rep(c("Died","Survived"), each = 2),
+         gender = rep(c("Male","Female"), times = 2)) %>%
+  gather(Child, Adult, key = age, value = Inds) 
+
+dat_text <- data.frame(
+  label = c(20,20),
+  age   = c("Adult","Child")
+)
+
+
+titan.plot <-  ggplot(data = titan) +
+  geom_mosaic(aes(x = product(fate,gender), fill=fate, weight = Inds)) +
+  facet_wrap(~age) +
+  theme_tufte()    +
+  scale_y_continuous(expand = c(0,0)) +
+  theme(axis.title = element_text(size = 14)) +
+  labs(x = "Gender", y = "proportion") +
+  theme(legend.text = element_text(size = 10), 
+        axis.text.x=element_text(size=12),
+        axis.text.y=element_text(size=12), 
+        strip.text.x = element_text(size = 14)) +
+  geom_text(data    = titan %>% filter(fate == "Died", gender == "Female"),
+            mapping = aes(x = -Inf, y = -Inf, label = Inds),
+            hjust   = -c(1,.5), vjust   = -.5, size = 4, color = "white") +
+  geom_text(data    = titan %>% filter(fate == "Survived", gender == "Female"),
+            mapping = aes(x = -Inf, y = Inf, label = Inds),
+            hjust   = -c(1,.5), vjust   = 1.5, size = 4, color = "white") +
+  geom_text(data    = titan %>% filter(fate == "Died", gender == "Male"),
+            mapping = aes(x = Inf, y = -Inf, label = Inds),
+            hjust   = c(2,1.5), vjust   = -.5, size = 4, color = "white") +
+  geom_text(data    = titan %>% filter(fate == "Survived", gender == "Male"),
+            mapping = aes(x = Inf, y = Inf, label = Inds),
+            hjust   = c(2,1.5), vjust   = 1.5, size = 4, color = "white") +
+  scale_fill_manual(values = wes_palette("Darjeeling1"), breaks=c("Survived","Died"))+
+  ggtitle(label = "Suriving the Titanic by age and gender")
+
+titan.plot 
+```
