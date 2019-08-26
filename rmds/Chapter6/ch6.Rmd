@@ -1,0 +1,759 @@
+---
+title: "Ch 6. Hypothesis testing"
+output: ioslides_presentation
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(forcats)
+library(dplyr)
+library(ggplot2)
+library(ggforce)
+library(tidyr)
+library(stringr)
+library(knitr)
+library(ggthemes)
+library(wesanderson)
+library(emo)
+library(forcats)
+library(ggmosaic)
+library(ggridges)
+library(kableExtra)
+library(gridExtra)
+library(ggrepel)
+library(RColorBrewer)
+library(plotly)
+library(readr)
+library(stringr)
+library(infer)
+library(emoGG)
+
+
+yb_theme <-   theme(axis.text.x=element_text(size=14),
+        axis.text.y=element_text(size=14),
+        axis.title.x = element_text(size=16),
+        axis.title.y = element_text(size=16),
+        legend.title = element_text(size=16),
+        legend.text = element_text(size=14),
+        plot.title = element_text(size=18),
+        strip.text =  element_text(size=14)) 
+
+sample.dist  <- data.frame(estimate = replicate(50000,mean(rnorm(20,0,1))) )
+```
+
+
+## Key Learning  Goals  
+
+<font size = 6>
+
+- Be able to describe the null hypothesis.      
+
+- Understand the practice of Null Hypothesis Significance Testing.  
+
+- Master the meaning of a P-value. 
+
+- Explain the concepts of false positives and false negatives and why they happen.
+
+</font>
+
+
+## Hypothesis Testing  
+
+<font size = 8>
+In addition to estimation, hypothesis testing is a major goal of statistics. 
+
+Example hypotheses:
+</font>
+
+<font size = 6> Does a treatment have an effect?  </font>  
+<br>   
+   
+<font size = 6> Are two groups different? </font>   
+<br>     
+  
+<font size = 6> Do the number of problems grow with a persons income?  </font>
+<br>   
+
+
+etc... 
+
+
+
+
+
+
+## Hypothesis Testing: The Dilemma `r ji("thinking")`
+
+We want to know  about the <font color = "LIGHTSALMON">World Out There.</font>  
+
+We cant sample the entire <font  color = "STEELBLUE">population.</font>  
+ 
+We can take a <font size =  "STEELBLUE" >sample</font> and make <font color = "STEELBLUE" >estimates.</font>  
+
+But <font  color = "STEELBLUE" >samples</font> <font color = "black" >
+ can differ from a </font><font color = "LIGHTSALMON" >population</font><font color = "black" > by chance</font>  
+
+<font color = "black"> So, can our estimates be simply explained by  chance, or are they special?</font>
+
+
+## Hypothesis Testing: The Solution `r ji("monocle")`
+
+We can only take a <font size =  "STEELBLUE" >sample</font> and make <font color = "STEELBLUE" >estimates.</font>   
+
+We can imagine taking $\infty$ # of <font color =  "STEELBLUE" >samples</font>  from a <font color = "LIGHTSALMON">population</font>   
+
+<font color = "black">Build a sampling dist. from a <font color = "purple">boring</font>  population we can describe. </font>  
+
+<font color = "black">Where would or estimate fall on this distribution</font>`r ji("question")``r ji("question")`  
+
+
+```{r fig.height =2.8, fig.width=8.3,warning = FALSE, message = FALSE}
+a <- ggplot(data = sample.dist, aes(x = estimate)) +
+  geom_histogram(bins = 100, color = "white", lwd = .1, aes(y = ..count../sum(..count..)), fill = "lightsalmon", alpha = .4) +
+  ylab("") + 
+  xlab("Estimates from sampling distribution") +  
+  annotate(geom = "text", x = .55, y = .02, label = "Estimate from \nmy sample", color = "steelblue", alpha = .7, size = 5.5)+
+  theme_tufte() +
+  yb_theme      
+
+  
+fail_to_reject <- a +  
+  ggtitle(label = "Likely sample from population")+
+  ylab("frequency") + 
+  geom_segment(aes(x=.55, xend=.2, y=.016, yend=0), size = 1, color = "steelblue",arrow = arrow(length = unit(0.1, "npc")), alpha = .4)
+
+reject <- a +  
+  ggtitle(label = "Unlikely sample from population")+
+  geom_segment(aes(x=.55, xend=.7, y=.016, yend=0), size = 1, color = "steelblue",arrow = arrow(length = unit(0.1, "npc")), alpha = .4)
+
+grid.arrange(fail_to_reject ,reject, nrow = 1)
+```
+
+
+
+## `r ji("warning")` Critical Assumption  `r ji("warning")` 
+
+<font size = 7>
+
+<font color = "red">Hypothesis testing assumes random sampling  </font> <font size = 5, color = "lightgrey"> or that we account for non-random sampling in building the null model.</font> 
+
+Hypothesis tests account for sampling error, NOT bias. 
+
+Hypothesis tests from a `r ji("poop")` biased sample `r ji("poop")` are misleading. 
+
+</font> 
+
+
+#  What's the deal with the  <br> `r ji("unamused")` <font color = "purple"> Null Hypothesis:</font> `r ji("unamused")` `r  ji("interrobang")`
+
+
+##  The `r ji("unamused")` <font color = "purple">Boring</font> `r ji("unamused")` Population 
+
+
+
+<font size = 10> This <font color = "purple">boring</font>  population comes from the <font color = "purple">null model, $H_0$</font></font>.
+
+<font size = 10> Building a sampling distribution from the appropriate <font color = "purple">null model</font>   is key to hypothesis testing.</font>
+
+ 
+## Hypotheses Are About <font color = "lightsalmon">Populations</font>
+
+<font size = 8>
+
+We hypothesis test by checking if our <font color = "steelblue"> estimate </font> is surprising under the null model. 
+
+We ask, "Is the <font color = "lightsalmon"> population</font> from which we sampled different from a <font color = "purple"> boring </font>  <font color = "lightsalmon"> population</font>*"
+</font>
+
+
+
+
+## `r ji("unamused")` <font color = "purple">Null hypothesis: </font> `r ji("unamused")`  
+
+<font size = 8> A specific statement about a population made for the sake of argument. </font>
+
+ - aka $H_0$,  the skeptical view. 
+
+
+
+## `r ji("unamused")` <font color = "purple">Null </font> `r ji("unamused")`  *vs.* `r ji("nerd_face")`<font color = "gold">Alternate hypothesis:</font> `r ji("nerd_face")`
+
+<font size = 8> 
+
+<font color = "purple">Null hypothesis: </font>  a specific statement about a population made for the sake of argument. </font>
+
+ - aka $H_0$,  the skeptical view. 
+
+<font size = 8>  <font color = "gold">Alternate hypothesis:</font> All parameter values except the null.</font>
+
+  - aka $H_A$, aka $H_1$
+
+
+## $H_0$ is Your Skeptical  Friend 
+
+
+<font size = 10>
+ 
+The <font color = "purple">Null Hypothesis</font> is kind of a jerk, but well-meaning.
+A good friend who calls you on your `r ji("cow")` `r ji("shirt")`</font> 
+
+
+## Remember Why We Do Stats!
+
+
+<font size = 10>
+
+Our goal  is to learn about the <font color = "lightsalmon">World Out There (the population)</font> from our <font color = "steelblue">finite view (the sample)</font>
+
+Rejecting the null hypothesis is not our goal <font color = "lightgrey">(although it can be satisfying / exciting).</font> 
+
+</font>
+
+
+## A Good `r ji("unamused")` <font color = "purple">Null Hypothesis: </font> `r ji("unamused")` 
+
+
+<font size = 6.5>
+
+Reflects all aspects of the <font color = "purple">null / boring</font> population, except those posed by $H_0$.  
+
+Asks "*Can the results be easily explained by chance?*"  
+
+Would be interesting if proven wrong.  
+
+Reflects the process of sampling.    
+
+</font>
+
+
+
+##  `r ji("unamused")`<font color = "purple"> $H_0$ </font> `r ji("unamused")`   is specific,  `r ji("nerd_face")` <font color = "gold"> $H_A$</font> `r ji("nerd_face")`  is not. 
+
+<font size = 10> What does this mean? </font>
+
+It means that a <font color = "purple">null hypothesis</font> specifies a  model that can be used to build a sampling distribution 
+
+- For example: $\mu = 0$ and $\sigma^2 = 1$ or $\mu_{pop1} = \mu_{pop2}$. 
+
+By contrast the <font color = "gold">alternative hypothesis</font> is less specific. 
+
+- That is, "*The sample does not come from a  population with the parameter specified by the null model*" or "*x > y*" etc...
+
+
+
+
+## Why Do We Test  `r ji("unamused")`<font color = "purple"> $H_0$ </font> `r ji("unamused")` `r ji("question")`  
+
+
+
+<div style= "float:left;position: relative; top: 0px;">
+[![](https://imgs.xkcd.com/comics/null_hypothesis.png)](https://xkcd.com/892/)]
+</div> 
+
+Heck, my eighth grade science class managed to conclusively reject it just based on a classroom experiment. It's pretty sad to hear about million-dollar research teams who can't even manage that.
+
+
+
+
+
+# P-values
+
+
+
+##  P-value
+
+<font color = "black">The p-value is the probability a sample from the null model would be as or more extreme than  our sample.</font>  
+
+It quantifies your surprise if you assumed that the null was true.  
+
+
+
+
+
+```{r,echo=FALSE, fig.height=3.7}
+my.ps <- sample.dist %>% 
+  summarize(lower.area.2 = round(mean( estimate <= -.2), digits = 3),
+            upper.area.2 =  round(mean( estimate > .2), digits = 3), 
+            p.val.2 = lower.area.2 + upper.area.2,
+            lower.area.7 = round(mean( estimate <= -.7), digits = 3),
+            upper.area.7 =  round(mean( estimate > .7), digits = 3), 
+            p.val.7 = lower.area.7 + upper.area.7) %>%
+  unlist()
+
+two.tail.unremakable <- ggplot(data = sample.dist, aes(x = estimate, fill = abs(estimate) >= .2)) +
+  geom_histogram(breaks = seq(-1,1,.02), color = "white", lwd = .1, aes(y = ..count../sum(..count..)), alpha = .4, show.legend = FALSE) +
+  ylab("probability") + 
+  xlab("Estimates of test statistic from sampling distribution") +  
+  annotate(geom = "text", x = .55, y = .02, 
+           label = "my test statistic", 
+           size=6,
+           color = "steelblue", 
+           alpha = .4)+
+  annotate(geom = "text", x = c(-.62,.62), y = c(.0075, .0075), 
+           label = c(sprintf("Area = %s",my.ps["lower.area.2"]),sprintf("Area = %s",my.ps["upper.area.2"])), 
+           color = "red", 
+           size=6,
+           alpha = .4)+  
+  geom_segment(aes(x=.55, xend=.2, y=.016, yend=0), 
+               size = 1, 
+               color = "steelblue",
+               arrow = arrow(length = unit(0.1, "npc")), alpha = .4)+ 
+  ggtitle("Sampling distribution under the null", subtitle = sprintf("Test Stat = .2; P-value = %s",my.ps["p.val.2"])) +
+  scale_fill_manual(values = c("grey","red"))+
+  theme_tufte() +
+  yb_theme      
+
+two.tail.unremakable
+```
+
+## Finding P-values 
+
+<font size = 6.5> Evaluating where the <font color = "steelblue">test statistic</font> lies on a sampling distribution built from the  <font color = "purple">null model </font>.
+
+We generate this <font color = "purple">null</font> sampling distribution by: 
+
+</font>
+
+- <font color = "black">Simulation </font> 
+
+- <font color = "black"> Permutation </font> (shuffling) 
+
+- <font color = "black">Mathematical results </font>  developed by professional statisticians. <font color = "grey">These are built from the logic of probability theory.</font> 
+
+
+## An Unremarkable P-Value
+
+We would `r ji("sleeping")` <font color = "black"> not be surprised  </font> `r ji("sleeping")`  if the sample below came from the null model <font color = "purple">null model</font>.  
+
+```{r,echo=FALSE, fig.height=3.7}
+two.tail.unremakable
+```
+
+
+## A Remarkable P-Value
+
+We would be `r ji("astonished")`  <font color = "black"> very surprised  </font>`r ji("astonished")`  if the sample below came from the  <font color = "purple">null model</font>.  
+
+```{r,echo=FALSE, fig.height=3.7}
+ ggplot(data = sample.dist, aes(x = estimate, fill = abs(estimate) >= .7)) +
+  geom_histogram(breaks = seq(-1,1,.02), color = "white", lwd = .1, aes(y = ..count../sum(..count..)), alpha = .4, show.legend = FALSE) +
+  ylab("probability") + 
+  xlab("Estimates of test statistic from sampling distribution") +  
+  annotate(geom = "text", x = .55, y = .02, 
+           label = "my test statistic", 
+           color = "steelblue", 
+           size=6,
+           alpha = .4)+
+  annotate(geom = "text", x = c(-1.2,1.2), y = c(.0075, .0075), hjust =c(0,1),
+           label = c(sprintf("Area = %s",my.ps["lower.area.7"]),sprintf("Area = %s",my.ps["upper.area.7"])), 
+           color = "red", 
+           size=6,
+           alpha = .4)+  
+  geom_segment(aes(x=.55, xend=.7, y=.016, yend=0), 
+               size = 1, 
+               color = "steelblue",
+               arrow = arrow(length = unit(0.1, "npc")), alpha = .4)+ 
+  ggtitle("Sampling distribution under the null", subtitle = sprintf("Test Stat = .7; P-value = %s",my.ps["p.val.7"])) +
+  scale_fill_manual(values = c("grey","red"))+
+  theme_tufte() +
+  yb_theme      
+```
+
+## Most tests are two-tailed
+
+
+This means that a deviation in either tail of the distirbution would be worth reporting.  
+
+
+
+```{r,echo=FALSE, fig.height=3.7}
+two.tail.unremakable
+```
+
+
+## One Tailed P-values
+
+If a tail of the distribution is nonsense, calculate a P-value without  it.  <font color = "lightgrey">We'll see that $\chi^2$ tests and F-tests are usually 1-tailed.</font>    
+
+
+```{r,echo=FALSE, fig.height=3.7}
+ggplot(data = sample.dist, aes(x = estimate, fill = estimate >= .2)) +
+  geom_histogram(breaks = seq(-1,1,.02), color = "white", lwd = .1, aes(y = ..count../sum(..count..)), alpha = .4, show.legend = FALSE) +
+  ylab("probability") + 
+  xlab("Estimates of test statistic from sampling distribution") +  
+  annotate(geom = "text", x = .55, y = .02, 
+           label = "my test statistic", 
+           color = "steelblue", 
+           size=6,
+           alpha = .4)+
+  annotate(geom = "text", x = c(.62), y = c(.0075), 
+           label = sprintf("Area = %s",my.ps["upper.area.2"]), 
+           color = "red", 
+           size=6,
+           alpha = .4)+  
+  geom_segment(aes(x=.55, xend=.2, y=.016, yend=0), 
+               size = 1, 
+               color = "steelblue",
+               arrow = arrow(length = unit(0.1, "npc")), alpha = .4)+ 
+  ggtitle("Sampling distribution under the null", subtitle = sprintf("Test Stat = .2; One-tailed P-value = %s",my.ps["upper.area.2"]) )+
+  scale_fill_manual(values = c("grey","red"))+
+  theme_tufte() +
+  yb_theme      
+```
+
+
+
+## A Guide To P-values <font color = "lightgrey">[From The [ASA](https://amstat.tandfonline.com/doi/abs/10.1080/00031305.2016.1154108#.XF_ODc9KjOS)]</font>
+
+
+P-values can indicate how <font color = "black">incompatible the data are</font> with a specified statistical model.  
+
+P-values <font color = "black">DO NOT</font> measure the probability that the studied hypothesis is true, or the probability that the data were produced by random chance alone.
+
+Scientific conclusions & business or policy <font color = "black">decisions should not be based</font> only on <font color = "black">whether a p-value passes a specific threshold.</font>
+
+Proper inference requires full reporting and transparency.
+
+A <font color = "black">p-value,</font> or statistical significance, <font color = "black">does not measure</font>  the <font color = "black">size</font>  of an effect or the <font color = "black">importance</font>  of a result.
+
+By itself, a p-value does not provide a good measure of evidence regarding a model or hypothesis. 
+
+
+
+
+
+
+
+# Statistical Significance and Making Binary Decisions
+
+## Statistical Significance
+
+<font size = 6>
+The <font color = "black">significance level, $\alpha$</font>, is the probability used as the criterion for rejecting the null hypothesis.  
+
+If the P-value is $\leq \alpha$, we reject the null hypothesis, and say  the result is `r ji("v")`<font color = "black">*"statistically significant"* `r ji("v")`.</font>    
+
+The value of the test statistic required to achieve $P \leq \alpha$ is called the <font color = "black">  *"critical value"*</font>    
+
+</font>
+
+## Stop `r ji("stop_sign")`  Think `r ji("brain")` What Happened`r ji("question")` 
+
+As skeptical scientists, we set up a <font color = "purple"> boring null hypothesis </font>.  
+
+We <font color = "black">do not directly test if this null hypothesis is true or false.</font>    
+
+Rather, we ask, "How weird would it be to get a test statistic as weird as mine <font color = "lightgrey">(or more extreme)</font>" <font color = "black">if the null was true.</font>
+
+If the answer is "Pretty weird", we reject the null.  
+
+
+
+## $\alpha$ Is <font color = "grey">(Somewhat)</font> Arbitrary
+
+<font size = 7>`r ji("handshake")` It is usually set at  0.05`r ji("handshake")`</font>  
+
+<div style= "float:left;position: relative; top: 5px; left: -20px;">
+[![](https://imgs.xkcd.com/comics/p_values.png)](http://xkcd.com/1478/)  
+</div> 
+
+
+
+[Is nearly significant ridiculous?](https://scientistseessquirrel.wordpress.com/2015/11/16/is-nearly-significant-ridiculous/) <br><br> OR <br><br> do [we hold the line at $\alpha = .05$](https://mchankins.wordpress.com/2013/04/21/still-not-significant/) <br> <br> <br> <br>
+
+`r ji("arrow_left")` "*If all else fails use significance at the $\alpha > .05$ level and hope no one notices*" <br>`r ji("rofl")` `r ji("rofl")` `r ji("rofl")` `r ji("rofl")`
+
+
+## Why $\alpha = .05$ `r ji("question")`  
+
+<font size = 6>
+
+"*The value for which P=0.05, or 1 in 20... is <font color = "hotpink">convenient</font> to take this point as a limit in judging whether a deviation ought to be considered significant or not...*"  
+
+"*If one in twenty does not seem high enough odds, we may... draw the line at one in fifty..., or one in a hundred....  Personally, the writer prefers to set a low standard of significance at the 5 per cent point, and <font color = "hotpink">ignore entirely</font> all results which fail to reach this level.*</font>
+
+- R.A. Fisher
+
+
+
+## What To Do When $p \leq \alpha$? 
+
+<font size = 6>
+
+When $p \leq \alpha$ we reject the null hypothesis, and call our result `r ji("v")`significant`r ji("v")`.  
+
+This is the beginning, not the end of a discussion.    
+
+Remember, we reject 1 in 20 true nulls (if $\alpha = .05$).  
+
+Replication and verification are the `r ji("heartpulse")` of science. 
+
+
+</font> <br><br> 
+
+
+In fact, Fisher went on to say *<font color = "lightgrey"> A scientific fact should be regarded as </font><font color = "pink">experimentally established</font><font color = "lightgrey">  only if a properly designed </font><font color = "pink">experiment rarely fails to give this level of significance.*</font>
+
+
+
+## What To Do When $p > \alpha$? 
+
+<font size = 10>
+
+If the test statistic does not meet the critical value, we <font color = "black">fail to reject the null hypothesis</font>. 
+
+`r ji("rotating_light")`We never accept the null`r ji("rotating_light")` 
+
+<font color = red> Why `r ji("brain")` `r ji("question")`</font></font>  
+
+
+## Errors In Hypothesis Testing 
+
+<font color = "darkblue">Even if you do everything right, hypothesis testing can ge wrong</font>  
+
+<font size =6 color = "black">False positive: Rejecting a true null.</font> 
+
+- This happens with probability $\alpha$ and is called a Type I error
+
+- Independent of n
+
+- Called a `r ji("v")`Type I error`r ji("v")`
+
+
+<font size =6 color = "black">False negative: Failing to reject a false null.</font> 
+
+- This happens with probability $\beta$.   
+
+- Decreases `r ji("arrow_down")` as n increases `r ji("arrow_up")`
+
+- Called a `r ji("v")`Type II error`r ji("v")`
+
+
+
+
+
+
+## The Effect of Sample Size
+
+```{r, warning=FALSE, message=FALSE}
+sample.size <- c(2^(1:9))
+tibble(p_reject = 
+         c(sapply(sample.size , function(X){
+           mean(replicate( 1000, unlist(t.test(rnorm(X),mu = .3)["p.value"]) <.05))}),
+           sapply(sample.size , function(X){
+             mean(replicate(1000, unlist(t.test(rnorm(X),mu = .0)["p.value"]) <.05))})))  %>%
+  mutate(H_0 = factor(rep(c(" False"," True"), each = length(sample.size )), 
+         levels = c(" True"," False")))%>%
+  mutate(sample.size  = rep(sample.size, 2)) %>% 
+  ggplot(aes(x = sample.size, y = p_reject, color = H_0)) +
+  geom_point(show.legend = FALSE) +
+  geom_smooth(se = FALSE, show.legend = FALSE) +
+  facet_wrap(~H_0, labeller = label_both) +
+  scale_x_continuous(trans = "log2") +
+  geom_hline(yintercept =  .05) +
+  theme_light() +
+  yb_theme    + 
+  ylim(c(0,1))+
+  ylab(expression(Prob.~of~rejecting~null~'('~alpha~""==0.05~')')) +
+  ggtitle("The probability of reject the null hypothesis",
+          subtitle = expression('Does not change with sample size if H'[0] ' is true. Increases with sample size if H'[0] ' is false') + 
+  theme(plot.subtitle = element_text(size = 15))
+  
+```
+
+<font color = "lightgrey">*The exact relationship between n and  the prob. of rejecting a false null depends on the effect size and the variance.</font>
+
+
+
+
+
+
+# Hypothesis Testing Example: <font color = "red">Red</font> vs <font color = "blue">Blue</font> Wrestlers  
+
+##  Hypothesis Testing Example
+
+**Does a red shirt help win wrestling?**
+
+![](./figs/wrestling.png)
+
+
+## The experiment and the results
+
+Does red influence the outcome of wrestling, taekwondo, and boxing?
+
+  - 16 of 20 rounds had more red-shirted than blueshirted winners in these sports in the 2004 Olympics
+  
+   -  Shirt color was randomly assigned 
+   
+   - Potentially related to red as a sign of aggression in animals.
+
+
+## The Steps of Hypothesis Testing  
+
+
+1. State <font color = "purple">$H_0$</font> and <font color = "gold">$H_A$</font>.  
+
+2. Calculate a test statistic.   
+
+3. Generate the null distribution.    
+
+4. Find critical value at specified $\alpha$, and the p-value. 
+
+5. Decide: <br>Reject the $H_0$ if the test stat is $\geq$ the critical value ($p\leq\alpha$). OR<br> Fail to reject $H_0$ if the test stat is  $<$ the critical value  ($p>\alpha$)..
+
+
+
+
+## 1. State `r ji("unamused")` <font color = "purple"> $H_0$ </font>`r ji("unamused")` and `r ji("nerd_face")` <font color = "gold"> $H_A$ </font>`r ji("nerd_face")`.  
+
+
+
+<font color = "purple">$H_0$ </font>: Red- and blue-shirted athletes are equally likely to win (proportion = 0.5).
+
+<font color = "gold">$H_A$ </font>: Red- and blue-shirted athletes are not equally likely to win (proportion $\neq$ 0.5).
+
+## 2. Calculate a Test Statistic.   
+
+
+16 of 20 rounds had more red-shirted than blueshirted winners 
+
+We see that prob.red.win equals 16/20 = 0.80. 
+
+Our test stat is the difference between our observation (16 of 20 wins) and our expectation (10 of twenty wins), and equlas 6 of 20.   
+
+## 3. Generate the Null Distribution. 
+
+```{r}
+wrestle.sim <- data.frame(red_wins = rbinom(n = 10000,size = 20, prob = .5)) %>%
+  mutate(as_or_more_extreme = abs(10 - red_wins) >= 6)
+
+ggplot(wrestle.sim, aes(x = red_wins)) +
+  geom_histogram(fill = "lightgrey", binwidth = 1, color = "white", aes(y = ..count../sum(..count..))) +
+  ylab("Expected proportion under the null") + 
+#  scale_fill_manual(values = c("lightgrey","red"), name = "As (or more)\nextreme than\nobserved")+
+  scale_y_continuous(expand = c(0,0)) +
+  xlab("Number of red victories (of 20 bouts)") +
+  ggtitle("Null distribution for number of red victories", subtitle = "Of twenty bouts")  +
+  theme_tufte() +
+  yb_theme #+ theme(legend.position = c(0.85, 0.75))
+
+```
+
+
+## 4. Find the p-value & the critical value. 
+
+
+
+
+
+```{r}
+each.side <- round(pbinom(4,20,.5),digits = 4)
+ggplot(wrestle.sim,aes(x = red_wins, fill =as_or_more_extreme )) +
+  geom_histogram(binwidth = 1, color = "white", aes(y = ..count../sum(..count..))) +
+  ylab("Expected proportion under the null") + 
+  scale_fill_manual(values = c("lightgrey","red"), name = "As (or more) extreme than observed")+
+  scale_y_continuous(expand = c(0,0)) +
+  xlab("Number of red victories (of 20 bouts)") +
+  ggtitle("Null distribution for number of red victories", subtitle = sprintf("Of twenty bouts. p = %s", 2*each.side))  +
+  theme_tufte() +
+  geom_vline(xintercept = c(5,15), lty = 2)+
+  annotate(geom = "text",x = 15,y = .1,label = " critical value \n (alpha = 0.05)", hjust = 0) +
+  annotate(geom = "text",x = 15.8,y = .015,label = sprintf(" Area = %s",each.side), color = "red", hjust = 0)+
+  annotate(geom = "text",x = 4.2,y = .015,label = sprintf(" Area = %s",each.side), color = "red", hjust = 1)+
+  theme(legend.position = "top", legend.direction = "horizontal")+
+  yb_theme 
+```
+
+
+
+## 5. Decide and conclude 
+
+P = `r 2*each.side`, so this result is unlikely under the null.  
+
+We reject $H_0$ at the $\alpha = 0.05$ significance threshold. 
+
+We conclude that red shirts perform better than we can reasonably expect by chance.  
+
+But we recognize that given many tries a pattern this extreme (or even more extreme) can occur without any dependence between victory and shorts color.  
+
+
+# Hypothesis Testing: Caveats and Cautionary Tails
+
+
+## Correlation $\neq$  causation 
+
+
+
+
+```{r, warning=FALSE, message = FALSE}
+# IMPORTING AND CLEANING DATA
+tvXlife <- read.csv(file = "https://ww2.amstat.org/publications/jse/datasets/televisions.dat.txt",
+                    header=FALSE,as.is=TRUE,sep="\n")
+these.names <- c("country","life.expect","people.per.tv","people.per.physician","fem.life.expect","male.life.expect")
+tvXlife <- t(apply(tvXlife,1,function(ROW){ 
+  tmp <- strsplit(ROW," ")[[1]]
+  tmp <- tmp[tmp!=""]
+	tmp[tmp == "*"] =NA
+	if(length(tmp)==7){  
+		tmp[2] <- paste(tmp[1:2],collapse="")
+		tmp <- tmp[-1]
+	}
+	return(tmp)
+}))
+tvXlife <- data.frame(tvXlife[,1],apply(tvXlife [,-1],2,as.numeric))
+colnames(tvXlife) <- these.names
+tvXlife$tvs.per.person <- 1/tvXlife$people.per.tv
+
+ggplot(data = tvXlife, aes(x = tvs.per.person, y= life.expect, label = country)) +
+  scale_x_continuous(trans = "log10",limits = c(.001,1),breaks = c(0.001,0.01,.1,1)) +
+  xlab("TV sets per capita") +
+  ylab("Median life expectancy (years)") +
+  ggtitle("Watch  TV and live forever?",  subtitle = "Lifespan increases with TVs per capita") +
+  geom_smooth(se=FALSE,color = "lightblue", alpha = .2)+
+   geom_text_repel(segment.colour = "white") +    
+  theme_tufte() +
+  yb_theme 
+```
+
+
+## Confounding variable
+
+An unmeasured variable that may cause both X and Y
+
+
+## Observations vs. Experiments 
+
+Observed correlations are intriguing, and can generate plausible and important hypotheses.
+
+Correlations in treatment (x) and outcome (y) in well-controlled  experimental  manipulations more strongly imply causation because we can (try to) control for confounding variables.
+
+
+## Statistical Significance <br> $\neq$ Biological Importance 
+
+
+
+
+## Test meaningful hypotheses! 
+
+<div style= "float:left;position: relative; top: 0px;">
+<img src = "https://www.bmj.com/content/bmj/363/bmj.k5094/F2.medium.jpg" width = 40%>
+</div> 
+
+
+<font size = 8>
+`r ji("small_airplane")`No evidence that parachutes prevent death and major trauma when jumping from aircraft.  [Yeh et al. 2018. BMJ](https://www.bmj.com/content/363/bmj.k5094)`r ji("small_airplane")`
+</font>
+
+
+
+## Significant? Important?   
+
+
+
+|                    |  <font size = 7>Important </font>  | <font size = 7>Not \n Important </font>|   
+|--------------------|-----------------------|----------------|
+| <font size = 7>Significant</font>              | <font size = 5>Polio vaccine reduces incidence of polio</font>                  |<font size = 5> Things you don’t care about, or already well known things </font>  |
+| <font size = 7>Not \n Significant</font>         | <font size = 5> Suggestive evidence in a small study, leading to future work. **OR** No support for a thing thought to  matter in a large study. </font>           | <font size = 5>Studies with small sample size and high P-value **OR** Things you don’t care about.</font>         |
+
